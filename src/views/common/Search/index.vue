@@ -121,7 +121,7 @@ export default {
     },
 
     setSelection(shape) {
-      console.log("sh shape => ", shape);
+      console.log("sh shape => ", shape.latLngs.getPath());
 
       let _this = this;
       _this.clearSelection();
@@ -146,7 +146,7 @@ export default {
       }
     },
 
-   selectColor(color) {
+    selectColor(color) {
       selectedColor = color;
       for (var i = 0; i < colors.length; ++i) {
         var currColor = colors[i];
@@ -315,12 +315,72 @@ export default {
         map: map,
       });
 
+      // testing code
+      //     google.maps.event.addListener(
+      //       drawingManager,
+      //       "polylinecomplete",
+      //       function (polyline) {
+      //         console.log("polyline => ", polyline);
 
+      //         var pointxy = polyline.getPath();
 
-      google.maps.event.addListener(drawingManager, "overlaycomplete", (e) => {
+      //         console.log("pointxy => ", pointxy);
 
-        console.log("e => ", e);
+      //         var triangleCoords = [];
+      //         for (var i = 0; i < pointxy.length; i++) {
+      //           console.log('pointxy.getAt(i).lat() => ',pointxy.getAt(i).lat());
 
+      //           var pointstemp = new google.maps.LatLng( pointxy.getAt(i).lat(), pointxy.getAt(i).lng() );
+      // console.log('pointstemp. => '+i ,pointstemp.lat());
+      // console.log('pointstemp. => '+i ,pointstemp.lng());
+
+      //           triangleCoords.push(pointstemp);
+      //           // console.log('triangleCoords => ',triangleCoords);
+      //           // console.log('triangleCoords => ',triangleCoords[0].lat(), triangleCoords[0].lng());
+      //           // console.log('triangleCoords => ',triangleCoords && triangleCoords[1].lat(), triangleCoords && triangleCoords[1].lng());
+      //         }
+      //         console.log('triangleCoords => ',triangleCoords);
+
+      //         //Call the API interface directly to calculate the length and unit meters of several line segments
+      //         var distanceValue = google.maps.geometry.spherical.computeLength( triangleCoords );
+
+      //         console.log("distanceValue =>", distanceValue);
+
+      //         // distanceValue = (distanceValue/1000).toFixed(2);
+      //         // distanceValue += "Km";
+
+      //         // console.log('distanceValue after=> ',distanceValue);
+
+      //         var marker = new google.maps.Marker({
+      //           map: map,
+      //           position: triangleCoords[triangleCoords.length - 1],
+      //           label: distanceValue,
+      //         });
+      //       }
+      //     );
+
+      // testing code end
+
+      google.maps.event.addListener(drawingManager, "polylinecomplete", (e) => {
+        console.log("event ii => ", e);
+        var pointxy = e.getPath();
+        console.log("pointxy iii => ", pointxy);
+
+        var triangleCoords = [];
+        for (var i = 0; i < pointxy.length; i++) {
+          console.log("pointxy.getAt(i).lat() => ", pointxy.getAt(i).lat());
+
+          var pointstemp = new google.maps.LatLng( pointxy.getAt(i).lat(), pointxy.getAt(i).lng() );
+          console.log("pointstemp. iii => " + i, pointstemp.lat());
+          console.log("pointstemp. iii => " + i, pointstemp.lng());
+
+          triangleCoords.push(pointstemp);
+          console.log("triangleCoords iii => ", triangleCoords);
+        }
+
+        var distanceValue = google.maps.geometry.spherical.computeLength( triangleCoords );
+
+        console.log("distanceValue =>", distanceValue);
 
         if (e.type != google.maps.drawing.OverlayType.MARKER) {
           // Switch back to non-drawing mode after drawing a shape.
@@ -331,12 +391,27 @@ export default {
           newShape.type = e.type;
 
           google.maps.event.addListener(newShape, "click", () => {
+            console.log("newShape => ", newShape);
             _this.setSelection(newShape);
+            console.log(
+              "_this.setSelection(newShape)=> ",
+              _this.setSelection(newShape)
+            );
           });
           _this.setSelection(newShape);
         }
       });
 
+      // google.maps.event.addListener(
+      //   drawingManager,
+      //   "polylinecomplete",
+      //   function (event) {
+      //     console.log("Heyyyyyyyyyyy getPath", event.getPath());
+      //     console.log("Heyyyyyyyyyyy getArray", event.getPath().getArray());
+      //     console.log("Heyyyyyyyyyyy lat of [0]", event.getPath().getArray()[0].lat(), event.getPath().getArray()[0].lng());
+      //     console.log("Heyyyyyyyyyyy lat of [1]", event.getPath().getArray()[1].lat(), event.getPath().getArray()[1].lng());
+      //   }
+      // );
 
       _this.buildColorPalette();
     },
