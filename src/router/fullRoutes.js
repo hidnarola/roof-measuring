@@ -12,18 +12,30 @@ const fullRoutes = [
 			icon: 'home'
 		}
 	},
-	{
-		path: '/search',
-		name: 'search',
-		components: {
-			default: () => import('@/views/common/Search/index'),
-			tip: () => import('@/views/common/Search/tip')
-		},
-		meta: {
-			icon: 'earth',
-			sideName: 'Map'
-		}
-	},
+	// {
+	// 	path: '/map',
+	// 	name: 'search',
+	// 	components: {
+	// 		default: () => import('@/views/common/Search/index'),
+	// 		tip: () => import('@/views/common/Search/tip')
+	// 	},
+	// 	meta: {
+	// 		icon: 'earth',
+	// 		sideName: 'Map'
+	// 	}
+	// },
+	// {
+	// 	path: '/edges',
+	// 	name: 'Edges',
+	// 	components: {
+	// 		default: () => import('@/views/common/Search/Map'),
+	// 		// tip: () => import('@/views/common/Search/tip')
+	// 	},
+	// 	meta: {
+	// 		icon: 'earth',
+	// 		sideName: 'Edges',
+	// 	}
+	// },
 	error,
 ];
 

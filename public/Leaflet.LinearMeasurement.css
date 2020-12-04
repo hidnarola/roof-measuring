@@ -20,7 +20,7 @@
 }
 
 .total-popup-content {
-    padding         : 1px 7px;
+    padding         : 1px -1px;
     background-color: #4d90fe;
     border-radius   : 8px;
     color           : white;

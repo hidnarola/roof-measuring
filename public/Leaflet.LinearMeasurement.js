@@ -7,15 +7,14 @@
             contrastingColor: '#fff',
             show_last_node: false,
             show_azimut: false
+
         },
-        // console.log('LinearMeasurement map => ',map);
 
         clickSpeed: 200,
-
         onAdd: function (map) {
-            // console.log('Called onAdd');
             var container = L.DomUtil.create('div', 'leaflet-control leaflet-bar'),
                 link = L.DomUtil.create('a', 'icon-ruler', container),
+                // remove = L.DomUtil.create('a', 'icon-remove', container),
                 map_container = map.getContainer(),
                 me = this;
 
@@ -27,9 +26,7 @@
                     // me.resetRuler(!!me.mainLayer);
                     // L.DomUtil.removeClass(link, 'icon-active');
                     // L.DomUtil.removeClass(map_container, 'ruler-map');
-
                 } else {
-
                     me.initRuler();
                     L.DomUtil.addClass(link, 'icon-active');
                     L.DomUtil.addClass(map_container, 'ruler-map');
@@ -70,12 +67,10 @@
         },
 
         onRemove: function (map) {
-            // console.log('Called onRemove');
             this.resetRuler(!!this.mainLayer);
         },
 
         initRuler: function () {
-            // console.log('Called initRuler');
 
             var me = this,
                 map = this._map;
@@ -84,6 +79,7 @@
             this.mainLayer.addTo(this._map);
 
             map.touchZoom.disable();
+
             map.doubleClickZoom.disable();
             map.boxZoom.disable();
             map.keyboard.disable();
@@ -97,6 +93,7 @@
             };
 
             this.clickEventFn = function (e) {
+
                 if (me.clickHandle) {
                     clearTimeout(me.clickHandle);
                     me.clickHandle = 0;
@@ -105,17 +102,16 @@
                         me.preClick(e);
                         me.getMouseClickHandler(e);
                     }
-
                     me.getDblClickHandler(e);
-
-                } else {
+                }
+                else {
                     me.preClick(e);
-
                     me.clickHandle = setTimeout(function () {
                         me.getMouseClickHandler(e);
+                        // me.getDblClickHandler(e);
                         me.clickHandle = 0;
-
                     }, me.clickSpeed);
+
                 }
             };
 
@@ -132,9 +128,6 @@
         },
 
         initLayer: function () {
-            // console.log('Called initLayer');
-            console.log('this.mainLayer => ', this.mainLayer);
-
             this.layer = L.featureGroup();
             this.layer.addTo(this.mainLayer);
             this.layer.on('selected', this.layerSelected);
@@ -142,7 +135,7 @@
         },
 
         resetRuler: function (resetLayer) {
-            // console.log('Called resetRuler', resetLayer);
+
 
             var map = this._map;
 
@@ -180,6 +173,8 @@
             this.total = null;
             this.lastCircle = null;
 
+
+
             /* Leaflet return distances in meters */
             this.UNIT_CONV = 1000;
             this.SUB_UNIT_CONV = 1000;
@@ -200,7 +195,6 @@
         },
 
         cleanUpMarkers: function (fixed) {
-            // console.log('Called cleanUpMarkers');
 
             var layer = this.layer;
 
@@ -218,7 +212,6 @@
         },
 
         cleanUpFixed: function () {
-            // console.log('Called cleanUpFixed');
 
             var layer = this.layer;
 
@@ -232,7 +225,6 @@
         },
 
         convertDots: function () {
-            // console.log('Called convertDots');
 
             var me = this,
                 layer = this.layer;
@@ -274,7 +266,6 @@
         },
 
         displayMarkers: function (latlngs, multi, sum) {
-            // console.log('Called displayMarkers');
 
             var x, y, label, ratio, p,
                 latlng = latlngs[latlngs.length - 1],
@@ -321,7 +312,6 @@
         },
 
         renderCircle: function (latLng, radius, layer, type, label) {
-            // console.log('Called renderCircle');
 
             var color = this.options.color,
                 lineColor = this.options.color,
@@ -356,7 +346,7 @@
             if (label) {
                 var cicon = L.divIcon({
                     className: 'total-popup-label ' + nodeCls,
-                    html: '<span style="color: ' + color + ';">' + label + azimut + '</span>'
+                    html: '<span class="closeTest" style="color: ' + color + ';">' + label + azimut + ' </span>'
                 });
 
                 options.icon = cicon;
@@ -373,7 +363,6 @@
         },
 
         getAzimut: function (a, b) {
-            // console.log('Called getAzimut');
 
             var deg = 0;
 
@@ -398,7 +387,6 @@
         },
 
         renderPolyline: function (latLngs, dashArray, layer) {
-            // console.log('Called renderPolyline');
 
             var poly = L.polyline(latLngs, {
                 color: this.options.color,
@@ -406,15 +394,12 @@
                 opacity: 1,
                 dashArray: dashArray
             });
-
             poly.addTo(layer);
 
             return poly;
         },
 
         renderMultiPolyline: function (latLngs, dashArray, layer) {
-            // console.log('Called renderMultiPolyline');
-
             /* Leaflet version 1+ delegated the concept of multi-poly-line to the polyline */
             var multi;
 
@@ -440,7 +425,6 @@
         },
 
         formatDistance: function (distance, precision) {
-            // console.log('Called formatDistance');
 
             var s = L.Util.formatNum((distance < 1 ? distance * parseFloat(this.SUB_UNIT_CONV) : distance), precision),
                 u = (distance < 1 ? this.SUB_UNIT : this.UNIT);
@@ -449,25 +433,19 @@
         },
 
         hasClass: function (target, classes) {
-            // console.log('Called hasClass');
-
             var fn = L.DomUtil.hasClass;
-
             for (var i in classes) {
                 if (fn(target, classes[i])) {
                     return true;
                 }
             }
-
             return false;
         },
 
         preClick: function (e) {
-            // console.log('Called preClick');
 
             var me = this,
                 target = e.originalEvent.target;
-            // console.log('me preClick => ', me);
 
             if (this.hasClass(target, ['leaflet-popup', 'total-popup-content'])) {
                 return;
@@ -485,7 +463,6 @@
         },
 
         getMouseClickHandler: function (e) {
-            // console.log('Called getMouseClickHandler');
 
             var me = this;
             me.fixedLast = me.last;
@@ -493,7 +470,6 @@
 
             if (me.poly) {
                 me.latlngsList.push(me.latlngs);
-
                 if (!me.multi) {
                     me.multi = me.renderMultiPolyline(me.latlngsList, '5 5', me.layer, 'dot');
                 } else {
@@ -502,9 +478,12 @@
             }
 
             var o, dis;
+
             for (var l in me.latlngsList) {
                 o = me.latlngsList[l];
-                me.sum += o[0].distanceTo(o[1]) / me.UNIT_CONV;
+                // console.log('me o => ', o);
+                me.sum = o[0].distanceTo(o[1]) / me.UNIT_CONV;
+                // me.sum += o[0].distanceTo(o[1]) / me.UNIT_CONV;
             }
 
             if (me.measure.unit === this.SUB_UNIT) {
@@ -520,15 +499,14 @@
         },
 
         getMouseMoveHandler: function (e) {
-
             // console.log('Called getMouseMoveHandler');
-
             var azimut = '';
 
             if (this.prevLatlng) {
                 var latLng = e.latlng;
 
                 this.latlngs = [this.prevLatlng, e.latlng];
+
 
                 if (!this.poly) {
                     this.poly = this.renderPolyline(this.latlngs, '5 5', this.layer);
@@ -540,14 +518,15 @@
                 this.distance = parseFloat(this.prevLatlng.distanceTo(e.latlng)) / this.UNIT_CONV;
 
                 /* scalar and unit */
-                this.measure = this.formatDistance(this.distance + this.sum, 2);
+                this.measure = this.formatDistance(this.distance, 2);
+                // this.measure = this.formatDistance(this.distance + this.sum, 2);
 
                 var a = this.prevLatlng ? this._map.latLngToContainerPoint(this.prevLatlng) : null,
                     b = this._map.latLngToContainerPoint(latLng);
 
                 if (a && this.options.show_azimut) {
                     var style = 'color: ' + this.options.contrastingColor + ';';
-                    azimut = ' <span class="azimut azimut-final" style="' + style + '"> &nbsp; ' + this.getAzimut(a, b) + '&deg;</span>';
+                    azimut = '<span class="azimut azimut-final" style="' + style + '"> &nbsp; ' + this.getAzimut(a, b) + '&deg;</span>';
                 }
 
                 /* tooltip with total distance */
@@ -559,7 +538,7 @@
 
                     this.total = L.marker(e.latlng, {
                         icon: this.totalIcon,
-                        clickable: true
+                        clickable: false
                     }).addTo(this.layer);
 
                 } else {
@@ -603,10 +582,23 @@
         },
 
         getDblClickHandler: function (e) {
-            // console.log('Called getDblClickHandler');
-
             var azimut = '',
                 me = this;
+
+            const itPolyData = JSON.parse(localStorage.getItem("latlng")) ||[]
+
+            var tempArray = []
+            var tmpo = JSON.parse(JSON.stringify(me.latlngsList))
+
+            tempArray.push((tmpo)[tmpo.length - 1][1], JSON.parse(JSON.stringify(e.latlng)))
+            tmpo.push(tempArray)
+
+            itPolyData.push(tmpo)
+
+            localStorage.setItem("latlng", JSON.stringify(itPolyData))
+
+
+
 
             if (!this.total) {
                 return;
@@ -616,10 +608,10 @@
 
             L.DomEvent.stop(e);
 
-            if (this.options.show_azimut) {
-                var style = 'color: ' + this.options.contrastingColor + ';';
-                azimut = ' <span class="azimut azimut-final" style="' + style + '"> &nbsp; ' + this.lastAzimut + '&deg;</span>';
-            }
+            // if (this.options.show_azimut) {
+            //     var style = 'color: ' + this.options.contrastingColor + ';';
+            //     azimut = ' <span class="azimut azimut-final" style="' + style + '"> &nbsp; ' + this.lastAzimut + '&deg;</span>';
+            // }
             // console.log('this.layer => ', this.layer);
 
             var workspace = this.layer,
@@ -628,16 +620,11 @@
                 total_latlng = this.total.getLatLng(),
                 total_label = this.total,
                 html = [
-                    '<div class="total-popup-content ssi" style="background-color:' + this.options.color + '; color: ' + this.options.contrastingColor + '">' + label + azimut,
+                    '<div class="total-popup-content" style="background-color:' + this.options.color + '; color: ' + this.options.contrastingColor + '">' + label + azimut,
                     '  <svg class="close" viewbox="0 0 45 35">',
                     '   <path  style="stroke: ' + this.options.contrastingColor + '" class="close" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
                     '  </svg>',
                     '</div>'
-                    // '<div class="total-popup-content" style="background-color:' + this.options.color + '; color: ' + this.options.contrastingColor + '">' + label + azimut,
-                    // '  <svg class="close" viewbox="0 0 45 35">',
-                    // '   <path style="stroke: ' + this.options.contrastingColor + '" class="close" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
-                    // '  </svg>',
-                    // '</div>'
                 ].join('');
 
 
@@ -651,30 +638,41 @@
                 sub_unit: this.SUB_UNIT_CONV
             };
 
-            // console.log('workspace => ', workspace);
             var fireSelected = function (e) {
-                // console.log('called fireSelected', e);
-
                 if (L.DomUtil.hasClass(e.originalEvent.target, 'close')) {
                     me.mainLayer.removeLayer(workspace);
-                    // Object.keys(workspace._layers).map(function (key, index) {
-
-                    //     console.log('myObject[key] => ', workspace._layers[key]._latlng);
-                    //     me.mainLayer.remove(workspace._layers[key]);
-                    // });
+                    localStorage.removeItem("latlng")
                 } else {
                     workspace.fireEvent('selected', data);
+                }
+
+                if (L.DomUtil.hasClass(e.originalEvent.target, 'closeTest')) {
+                    // me.mainLayer.removeLayer(workspace);
+                    Object.keys(workspace._layers).map(function (key, index) {
+                        // workspace._layers[key]._latlng.remove(index, 1);
+                        // me.mainLayer.remove(workspace._layers[key]._latlng,1);
+
+                        // var poly = L.polyline(latlngsListData[1], {
+                        //     // color: this.options.color,
+                        //     weight: 2,
+                        //     opacity: 1,
+                        //     // dashArray: dashArray
+                        // });
+
+                        // poly.remove(workspace._layers[key]);
+                    });
                 }
             };
 
             workspace.on('click', fireSelected);
             workspace.fireEvent('selected', data);
 
+
+
             this.resetRuler(false);
         },
 
         purgeLayers: function (layers) {
-            // console.log('Called purgeLayers');
 
             for (var i in layers) {
                 if (layers[i]) {
@@ -684,7 +682,6 @@
         },
         layerSelected: function (e) {
             // console.log('Called layerSelected');
-
         }
     });
 
