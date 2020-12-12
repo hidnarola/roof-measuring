@@ -17,7 +17,11 @@
                 // remove = L.DomUtil.create('a', 'icon-remove', container),
                 map_container = map.getContainer(),
                 me = this;
+        //    let isItTrueForLink = localStorage.getItem("pencil")
 
+        //     if (isItTrueForLink) {
+        //         link = L.DomUtil.create('a', 'icon-ruler', container)
+        //     }
             link.href = '#';
             link.title = 'Toggle measurement tool';
 
@@ -585,7 +589,7 @@
             var azimut = '',
                 me = this;
 
-            const itPolyData = JSON.parse(localStorage.getItem("latlng")) ||[]
+            const itPolyData = JSON.parse(localStorage.getItem("latlng")) || []
 
             var tempArray = []
             var tmpo = JSON.parse(JSON.stringify(me.latlngsList))

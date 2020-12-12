@@ -1,24 +1,8 @@
 <template>
   <div id="home">
     <ul class="nav">
-      <li class="nav-item">
-        <a
-          class="nav-link"
-          :class="{ active: isOpenFirst === true }"
-          href="javascript:void(0)"
-          @click="openDiv(`first`)"
-          >Draw</a
-        >
-      </li>
-      <li class="nav-item">
-        <a
-          class="nav-link"
-          :class="{ active: isOpenSecond === true }"
-          href="javascript:void(0)"
-          @click="openDiv(`second`)"
-          >Edges</a
-        >
-      </li>
+      <li class="nav-item"> <a class="nav-link" :class="{ active: isOpenFirst === true }" href="javascript:void(0)" @click="openDiv(`first`)">Draw</a></li>
+      <li class="nav-item"><a class="nav-link" :class="{ active: isOpenSecond === true }" href="javascript:void(0)" @click="openDiv(`second`)" >Edges</a></li>
     </ul>
     <div v-if="isOpenFirst">
       <Draw />
@@ -52,6 +36,7 @@ export default {
       } else if (open === "second") {
         this.isOpenSecond = true;
         this.isOpenFirst = false;
+
       }
     },
   },

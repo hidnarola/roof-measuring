@@ -22,6 +22,7 @@ export default {
       //simple map
       var zoom = localStorage.getItem("zoom");
       var latlngs = JSON.parse(localStorage.getItem("latlng"));
+console.log('latlngs => ',latlngs);
 
       this.map = L.map("map").setView(
         [
@@ -69,7 +70,6 @@ export default {
 
       if (latlngs) {
         for (var i = 0; i < latlngs.length; i++) {
-
           for (var j = 0; j < latlngs[i].length; j++) {
             //  create a polyline
             var path = new L.Polyline(latlngs[i][j], {

@@ -9,6 +9,7 @@
           {{ display.name }}
         </div>
       </div>
+      <p @click="handleRemove()" class="delete">Delete Edges</p>
     </div>
   </div>
 </template>
@@ -29,28 +30,27 @@ export default {
         { name: "Tan", backgroundColor: "#D2B48C" },
       ],
       selectedColor: null,
-      selectedLat: null,
-      selectedLng: null,
-      polyArray: [],
+      latlngs: [],
+      enableDelete: false,
     };
   },
   mounted() {
     this.initMap();
   },
-
   methods: {
     initMap() {
-      this.polyArrayData;
       var vueInstance = this;
 
-      var latlngs = JSON.parse(localStorage.getItem("latlng"));
+      console.log("vueInstance.selectedColor => ", vueInstance.selectedColor);
+
+      this.latlngs = JSON.parse(localStorage.getItem("latlng"));
 
       var zoom = localStorage.getItem("zoom");
 
       const map = L.map("myMap").setView(
         [
-          latlngs ? latlngs[0][0][0]["lat"] : -41.2858,
-          latlngs ? latlngs[0][0][0]["lng"] : 174.78682,
+          this.latlngs ? this.latlngs[0][0][0]["lat"] : -41.2858,
+          this.latlngs ? this.latlngs[0][0][0]["lng"] : 174.78682,
         ],
         zoom ? zoom : 15
       );
@@ -62,13 +62,14 @@ export default {
         }
       ).addTo(map);
 
-      if (latlngs) {
-        for (var i = 0; i < latlngs.length; i++) {
-
-          for (var j = 0; j < latlngs[i].length; j++) {
+      if (this.latlngs) {
+        for (var i = 0; i < this.latlngs.length; i++) {
+          for (var j = 0; j < this.latlngs[i].length; j++) {
             //  create a polyline
-            var path = new L.Polyline(latlngs[i][j], {
-              color: "#1e0fff",
+            var path = new L.Polyline(this.latlngs[i][j], {
+              color: vueInstance.selectedColor
+                ? vueInstance.selectedColor
+                : "#1e0fff",
               dashArray: "5 5",
               lineCap: "round",
               weight: 2,
@@ -76,9 +77,12 @@ export default {
             }).addTo(map);
 
             var distance = L.latLng([
-              latlngs[i][j][0].lat,
-              latlngs[i][j][0].lng,
-            ]).distanceTo([latlngs[i][j][1].lat, latlngs[i][j][1].lng]);
+              this.latlngs[i][j][0].lat,
+              this.latlngs[i][j][0].lng,
+            ]).distanceTo([
+              this.latlngs[i][j][1].lat,
+              this.latlngs[i][j][1].lng,
+            ]);
 
             path.setText(`${distance.toFixed(2)}`, {
               center: true,
@@ -88,26 +92,57 @@ export default {
             // perpendicular, flip, angle
 
             path.on("mouseover", function (e) {
-              new L.Polyline(e.sourceTarget._latlngs, {
-                color: vueInstance.selectedColor,
-                dashArray: "5, 5",
-                lineCap: "round",
-              }).addTo(map);
+              // var path_2 = new L.Polyline(e.sourceTarget._this.latlngs, {
+              //   color: vueInstance.selectedColor,
+              //   dashArray: "5, 5",
+              //   lineCap: "round",
+              // }).addTo(map);
+
+              e.sourceTarget.setStyle({
+                color: vueInstance.selectedColor || "#1e0fff",
+              });
+            });
+
+            path.on("click", function (e) {
+              console.log("ep e.sourceTarget =>", e)
+
+              if (vueInstance.enableDelete) {
+
+                let finalArray = JSON.parse(
+                  JSON.stringify(vueInstance.latlngs)
+                ).map((dtt) => {
+                  console.log("dtt => ", dtt);
+                  return dtt.filter((dt) => {
+
+                    if (
+                      e.sourceTarget._latlngs[0].lat !== dt[0
+                      ].lat &&
+                      e.sourceTarget._latlngs[0].lng !== dt[0].lng &&
+                      e.sourceTarget._latlngs[1].lat !== dt[1].lat &&
+                      e.sourceTarget._latlngs[1].lng !== dt[1].lng
+                    ) {
+                      return dt;
+                    }
+
+                    e.sourceTarget.remove(map);
+                  });
+                });
+                console.log("finalArray => ", finalArray);
+                localStorage.setItem("latlng", JSON.stringify(finalArray));
+              }
+              // map.removeLayers(e)
             });
           }
         }
       }
-
     },
     handleColor(color) {
       this.selectedColor = color;
-      this.selectedColor === "yellow"
-        ? "#F1F903"
-        : color === "black"
-        ? "#17202A"
-        : color === "blue"
-        ? "#1e0fff"
-        : "#DCD41F";
+      this.enableDelete = false;
+    },
+    handleRemove() {
+      // this.selectedColor = null;
+      this.enableDelete = true;
     },
   },
 };
@@ -156,6 +191,9 @@ export default {
   background-color: #fff;
   border: 2px solid;
   /* border: 2px dashed; */
+}
+.delete {
+  cursor: pointer;
 }
 .bg-Blue {
   border-color: #1e0fff;

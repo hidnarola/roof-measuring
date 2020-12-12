@@ -17,7 +17,7 @@
     "jquery": "^3.5.1",
     "leaflet": "^1.7.1",
     "leaflet-linear-measurement": "0.0.1",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.20",
     "measuretool-googlemaps-v3": "^0.4.2",
     "rxjs": "^6.5.2",
     "vue": "^2.6.10",
