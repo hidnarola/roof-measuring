@@ -32,6 +32,8 @@ export default {
       selectedColor: null,
       latlngs: [],
       enableDelete: false,
+      selectedToRemove: [],
+      // initialLatlng: localStorage.getItem("initialLatlng"),
     };
   },
   mounted() {
@@ -41,25 +43,43 @@ export default {
     initMap() {
       var vueInstance = this;
 
-      console.log("vueInstance.selectedColor => ", vueInstance.selectedColor);
-
       this.latlngs = JSON.parse(localStorage.getItem("latlng"));
-
       var zoom = localStorage.getItem("zoom");
 
+      // const map = L.map("myMap").setView(
+      //   [
+      //     this.initialLatlng && JSON.parse(this.initialLatlng).lat
+      //       ? JSON.parse(this.initialLatlng).lat
+      //       : -41.2858,
+      //     this.initialLatlng && JSON.parse(this.initialLatlng).lng
+      //       ? JSON.parse(this.initialLatlng).lng
+      //       : 174.78682,
+      //   ],
+      //   zoom ? zoom : 15
+      // );
       const map = L.map("myMap").setView(
         [
-          this.latlngs ? this.latlngs[0][0][0]["lat"] : -41.2858,
-          this.latlngs ? this.latlngs[0][0][0]["lng"] : 174.78682,
+          this.latlngs &&
+          this.latlngs[0] &&
+          this.latlngs[0][0] &&
+          this.latlngs[0][0][0] &&
+          this.latlngs[0][0][0]["lat"]
+            ? this.latlngs[0][0][0]["lat"]
+            : -41.2858,
+          this.latlngs &&
+          this.latlngs[0] &&
+          this.latlngs[0][0] &&
+          this.latlngs[0][0][0] &&
+          this.latlngs[0][0][0]["lng"]
+            ? this.latlngs[0][0][0]["lng"]
+            : 174.78682,
         ],
         zoom ? zoom : 15
       );
 
       L.tileLayer(
         "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        {
-          maxZoom: 21,
-        }
+        { maxZoom: 21 }
       ).addTo(map);
 
       if (this.latlngs) {
@@ -90,6 +110,15 @@ export default {
               // orientation: "70",
             });
             // perpendicular, flip, angle
+            console.log(
+              "ii => ",
+              path._latlngs === JSON.parse(JSON.stringify(this.latlngs[i][j]))
+            );
+            console.log(
+              "ii array => ",
+              JSON.stringify(path._latlngs),
+              JSON.parse(JSON.stringify(this.latlngs[i][j]))
+            );
 
             path.on("mouseover", function (e) {
               // var path_2 = new L.Polyline(e.sourceTarget._this.latlngs, {
@@ -97,40 +126,35 @@ export default {
               //   dashArray: "5, 5",
               //   lineCap: "round",
               // }).addTo(map);
-
+              console.log("path => ", path);
+              console.log("path e =>", e);
+              // target._latlngs,sourceTarget._latlngs, sourceTarget.options.color
+              console.log( "vueInstance => ", JSON.parse(JSON.stringify(vueInstance.latlngs)) );
               e.sourceTarget.setStyle({
                 color: vueInstance.selectedColor || "#1e0fff",
               });
             });
 
             path.on("click", function (e) {
-              console.log("ep e.sourceTarget =>", e)
-
               if (vueInstance.enableDelete) {
-
-                let finalArray = JSON.parse(
+                vueInstance.latlngs = JSON.parse(
                   JSON.stringify(vueInstance.latlngs)
                 ).map((dtt) => {
-                  console.log("dtt => ", dtt);
                   return dtt.filter((dt) => {
-
                     if (
-                      e.sourceTarget._latlngs[0].lat !== dt[0
-                      ].lat &&
-                      e.sourceTarget._latlngs[0].lng !== dt[0].lng &&
-                      e.sourceTarget._latlngs[1].lat !== dt[1].lat &&
-                      e.sourceTarget._latlngs[1].lng !== dt[1].lng
+                      JSON.stringify(dt) !=
+                      JSON.stringify(e.sourceTarget._latlngs)
                     ) {
                       return dt;
                     }
-
                     e.sourceTarget.remove(map);
                   });
                 });
-                console.log("finalArray => ", finalArray);
-                localStorage.setItem("latlng", JSON.stringify(finalArray));
+                localStorage.setItem(
+                  "latlng",
+                  JSON.stringify(vueInstance.latlngs)
+                );
               }
-              // map.removeLayers(e)
             });
           }
         }
@@ -141,7 +165,6 @@ export default {
       this.enableDelete = false;
     },
     handleRemove() {
-      // this.selectedColor = null;
       this.enableDelete = true;
     },
   },

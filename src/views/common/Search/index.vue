@@ -10,6 +10,7 @@ export default {
   data() {
     return {
       map: null,
+      // initialLatlng: localStorage.getItem("initialLatlng"),
     };
   },
   mounted() {
@@ -22,12 +23,12 @@ export default {
       //simple map
       var zoom = localStorage.getItem("zoom");
       var latlngs = JSON.parse(localStorage.getItem("latlng"));
-console.log('latlngs => ',latlngs);
+
 
       this.map = L.map("map").setView(
         [
-          latlngs ? latlngs[0][0][0]["lat"] : -41.2858,
-          latlngs ? latlngs[0][0][0]["lng"] : 174.78682,
+          latlngs && latlngs[0] && latlngs[0][0] && latlngs[0][0][0] && latlngs[0][0][0]["lat"] ? latlngs[0][0][0]["lat"] : -41.2858,
+          latlngs && latlngs[0] && latlngs[0][0] && latlngs[0][0][0] && latlngs[0][0][0]["lng"] ? latlngs[0][0][0]["lng"]: 174.78682,
         ],
         zoom ? zoom : 15
       );
@@ -35,6 +36,10 @@ console.log('latlngs => ',latlngs);
       this.map.on("zoomend", function (e) {
         localStorage.setItem("zoom", e.target._zoom);
       });
+
+      // this.map.on("click", (event) => {
+      //   localStorage.setItem("initialLatlng", JSON.stringify(event.latlng));
+      // });
 
       L.tileLayer(
         "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
@@ -62,7 +67,6 @@ console.log('latlngs => ',latlngs);
 
       info.onAdd = function (map) {
         this._div = L.DomUtil.create("div", "info"); // create a div with a class "info"
-        // this.update();
         return this._div;
       };
 
@@ -90,15 +94,6 @@ console.log('latlngs => ',latlngs);
               attributes: { fill: "yellow" },
               // orientation: "70",
             });
-            // perpendicular, flip, angle
-
-            // path.on("mouseover", function (e) {
-            //   new L.Polyline(e.sourceTarget._latlngs, {
-            //     color: vueInstance.selectedColor,
-            //     dashArray: "5, 5",
-            //     lineCap: "round",
-            //   }).addTo(this.map);
-            // });
           }
         }
       }

@@ -15,7 +15,7 @@
 
 <script>
 import Draw from "../Search/index";
-import Edges from "../Search/Map";
+import Edges from "../Search/Edges";
 export default {
   name: "home",
   components: {

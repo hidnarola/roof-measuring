@@ -17,11 +17,11 @@
                 // remove = L.DomUtil.create('a', 'icon-remove', container),
                 map_container = map.getContainer(),
                 me = this;
-        //    let isItTrueForLink = localStorage.getItem("pencil")
+            // let isItTrueForLink = localStorage.getItem("pencil")
 
-        //     if (isItTrueForLink) {
-        //         link = L.DomUtil.create('a', 'icon-ruler', container)
-        //     }
+            // if (isItTrueForLink) {
+            //     link = L.DomUtil.create('a', 'icon-ruler', container)
+            // }
             link.href = '#';
             link.title = 'Toggle measurement tool';
 
@@ -596,13 +596,8 @@
 
             tempArray.push((tmpo)[tmpo.length - 1][1], JSON.parse(JSON.stringify(e.latlng)))
             tmpo.push(tempArray)
-
             itPolyData.push(tmpo)
-
             localStorage.setItem("latlng", JSON.stringify(itPolyData))
-
-
-
 
             if (!this.total) {
                 return;
