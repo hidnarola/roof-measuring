@@ -596,7 +596,19 @@
 
             tempArray.push((tmpo)[tmpo.length - 1][1], JSON.parse(JSON.stringify(e.latlng)))
             tmpo.push(tempArray)
+
             itPolyData.push(tmpo)
+
+            itPolyData.map(poly => {
+                poly.map(pl => {
+                    pl.map(p => {
+                        if (!p.hasOwnProperty("color")) {
+                            p.color = "#1e0fff"
+                        }
+                    })
+                })
+            })
+
             localStorage.setItem("latlng", JSON.stringify(itPolyData))
 
             if (!this.total) {

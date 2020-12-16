@@ -10,7 +10,6 @@ export default {
   data() {
     return {
       map: null,
-      // initialLatlng: localStorage.getItem("initialLatlng"),
     };
   },
   mounted() {
@@ -77,7 +76,7 @@ export default {
           for (var j = 0; j < latlngs[i].length; j++) {
             //  create a polyline
             var path = new L.Polyline(latlngs[i][j], {
-              color: "#1e0fff",
+              color: latlngs[i][j][0].color,
               dashArray: "5 5",
               lineCap: "round",
               weight: 2,
@@ -102,9 +101,6 @@ export default {
 };
 </script>
 <style>
-body {
-  /* padding: 50px; */
-}
 
 h1 {
   font-weight: 300;

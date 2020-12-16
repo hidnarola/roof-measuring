@@ -33,6 +33,7 @@ export default {
       latlngs: [],
       enableDelete: false,
       selectedToRemove: [],
+      enableColor: false,
       // initialLatlng: localStorage.getItem("initialLatlng"),
     };
   },
@@ -46,17 +47,6 @@ export default {
       this.latlngs = JSON.parse(localStorage.getItem("latlng"));
       var zoom = localStorage.getItem("zoom");
 
-      // const map = L.map("myMap").setView(
-      //   [
-      //     this.initialLatlng && JSON.parse(this.initialLatlng).lat
-      //       ? JSON.parse(this.initialLatlng).lat
-      //       : -41.2858,
-      //     this.initialLatlng && JSON.parse(this.initialLatlng).lng
-      //       ? JSON.parse(this.initialLatlng).lng
-      //       : 174.78682,
-      //   ],
-      //   zoom ? zoom : 15
-      // );
       const map = L.map("myMap").setView(
         [
           this.latlngs &&
@@ -89,7 +79,7 @@ export default {
             var path = new L.Polyline(this.latlngs[i][j], {
               color: vueInstance.selectedColor
                 ? vueInstance.selectedColor
-                : "#1e0fff",
+                : this.latlngs[i][j][0].color,
               dashArray: "5 5",
               lineCap: "round",
               weight: 2,
@@ -104,35 +94,47 @@ export default {
               this.latlngs[i][j][1].lng,
             ]);
 
-            path.setText(`${distance.toFixed(2)}`, {
+            path.setText(`${distance.toFixed(2)} m`, {
               center: true,
               attributes: { fill: "yellow" },
               // orientation: "70",
             });
-            // perpendicular, flip, angle
-            console.log(
-              "ii => ",
-              path._latlngs === JSON.parse(JSON.stringify(this.latlngs[i][j]))
-            );
-            console.log(
-              "ii array => ",
-              JSON.stringify(path._latlngs),
-              JSON.parse(JSON.stringify(this.latlngs[i][j]))
-            );
 
             path.on("mouseover", function (e) {
-              // var path_2 = new L.Polyline(e.sourceTarget._this.latlngs, {
-              //   color: vueInstance.selectedColor,
-              //   dashArray: "5, 5",
-              //   lineCap: "round",
-              // }).addTo(map);
-              console.log("path => ", path);
-              console.log("path e =>", e);
-              // target._latlngs,sourceTarget._latlngs, sourceTarget.options.color
-              console.log( "vueInstance => ", JSON.parse(JSON.stringify(vueInstance.latlngs)) );
-              e.sourceTarget.setStyle({
-                color: vueInstance.selectedColor || "#1e0fff",
-              });
+              if (vueInstance.enableColor) {
+                vueInstance.latlngs = JSON.parse(
+                  JSON.stringify(vueInstance.latlngs)
+                ).map((poly) => {
+                  return (
+                    poly &&
+                    poly.map((pl) => {
+                      if (
+                        pl[0].lat === e.sourceTarget._latlngs[0].lat &&
+                        pl[0].lng === e.sourceTarget._latlngs[0].lng &&
+                        pl[1].lat === e.sourceTarget._latlngs[1].lat &&
+                        pl[1].lng === e.sourceTarget._latlngs[1].lng
+                      ) {
+                        return (
+                          pl &&
+                          pl.map((dt) => {
+                            const additions = {
+                              color: vueInstance.selectedColor || "#1e0fff",
+                            };
+                            const b = { ...dt, ...additions };
+                            return b;
+                          })
+                        );
+                      } else {
+                        return pl;
+                      }
+                    })
+                  );
+                });
+                e.sourceTarget.setStyle({
+                  color: vueInstance.selectedColor || "#1e0fff",
+                });
+                localStorage.setItem("latlng", JSON.stringify(vueInstance.latlngs) );
+              }
             });
 
             path.on("click", function (e) {
@@ -142,8 +144,10 @@ export default {
                 ).map((dtt) => {
                   return dtt.filter((dt) => {
                     if (
-                      JSON.stringify(dt) !=
-                      JSON.stringify(e.sourceTarget._latlngs)
+                      dt[0].lat != e.sourceTarget._latlngs[0].lat &&
+                      dt[0].lng != e.sourceTarget._latlngs[0].lng &&
+                      dt[1].lat != e.sourceTarget._latlngs[1].lat &&
+                      dt[1].lng != e.sourceTarget._latlngs[1].lng
                     ) {
                       return dt;
                     }
@@ -161,11 +165,13 @@ export default {
       }
     },
     handleColor(color) {
+      this.enableColor = true;
       this.selectedColor = color;
       this.enableDelete = false;
     },
     handleRemove() {
       this.enableDelete = true;
+      this.enableColor = false;
     },
   },
 };
