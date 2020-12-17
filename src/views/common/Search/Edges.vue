@@ -2,14 +2,14 @@
   <div>
     <div id="myMap"></div>
     <div id="colorSelection">
-      <p>Color tool</p>
+      <p>Edges tool</p>
       <div v-for="(display, idx) in colors" :key="idx">
         <div @click="handleColor(display.name)" class="name">
           <span class="colorbox" :class="['bg-' + display.name]"></span>
           {{ display.name }}
         </div>
       </div>
-      <p @click="handleRemove()" class="delete">Delete Edges</p>
+      <p @click="handleRemove()" class="delete">Delete Edge</p>
     </div>
   </div>
 </template>
@@ -100,7 +100,7 @@ export default {
               // orientation: "70",
             });
 
-            path.on("mouseover", function (e) {
+            path.on("click", function (e) {
               if (vueInstance.enableColor) {
                 vueInstance.latlngs = JSON.parse(
                   JSON.stringify(vueInstance.latlngs)
@@ -154,10 +154,7 @@ export default {
                     e.sourceTarget.remove(map);
                   });
                 });
-                localStorage.setItem(
-                  "latlng",
-                  JSON.stringify(vueInstance.latlngs)
-                );
+                localStorage.setItem("latlng", JSON.stringify(vueInstance.latlngs) );
               }
             });
           }
