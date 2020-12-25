@@ -36,7 +36,7 @@ export default {
   white-space: normal;
   position: fixed;
   height: 100vh;
-  right: 0;
+  right: -333px;
   transition: all 0.3s;
   z-index: 900;
 

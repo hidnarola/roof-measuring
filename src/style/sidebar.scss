@@ -7,7 +7,7 @@
   width: var(--sidebar-width);
   height: 100vh;
   position: fixed;
-  z-index: 800;
+  z-index: 1111;
   overflow-x: hidden;
 
   #sidebar-scroll {
@@ -23,6 +23,7 @@
     transition: border 0.3s;
 
     .side-menu-icon {
+      min-height: 58px;
       margin-right: 25px;
     }
 

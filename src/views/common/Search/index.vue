@@ -1,5 +1,11 @@
 <template>
   <div>
+    <input
+      name="search"
+      id="searchBox"
+      placeholder="Search place"
+      @click.prevent="handleInput"
+    />
     <div id="map"></div>
   </div>
 </template>
@@ -10,10 +16,14 @@ export default {
   data() {
     return {
       map: null,
+      latlngs: [],
     };
   },
   mounted() {
     this.initMap();
+  },
+  created() {
+    window.addEventListener("beforeunload", this.handler);
   },
   methods: {
     initMap() {
@@ -21,31 +31,40 @@ export default {
 
       //simple map
       var zoom = localStorage.getItem("zoom");
-      var latlngs = JSON.parse(localStorage.getItem("latlng"));
+      var initLatLng = JSON.parse(localStorage.getItem("initLatLng"));
 
+      this.latlngs = JSON.parse(localStorage.getItem("latlng"));
 
       this.map = L.map("map").setView(
         [
-          latlngs && latlngs[0] && latlngs[0][0] && latlngs[0][0][0] && latlngs[0][0][0]["lat"] ? latlngs[0][0][0]["lat"] : -41.2858,
-          latlngs && latlngs[0] && latlngs[0][0] && latlngs[0][0][0] && latlngs[0][0][0]["lng"] ? latlngs[0][0][0]["lng"]: 174.78682,
+          initLatLng != null ? initLatLng.lat : -41.2858,
+          initLatLng != null ? initLatLng.lng : 174.78682,
         ],
-        zoom ? zoom : 15
+        zoom ? zoom : 16
       );
-
-      this.map.on("zoomend", function (e) {
-        localStorage.setItem("zoom", e.target._zoom);
-      });
-
-      // this.map.on("click", (event) => {
-      //   localStorage.setItem("initialLatlng", JSON.stringify(event.latlng));
-      // });
 
       L.tileLayer(
         "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         {
-          maxZoom: 21,
+          maxZoom: 20,
+          maxNativeZoom: 19,
         }
       ).addTo(this.map);
+
+      // this.map._layersMaxZoom = 25;
+
+      delete L.Icon.Default.prototype._getIconUrl;
+
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
+        iconUrl: require("leaflet/dist/images/marker-icon.png"),
+        shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
+      });
+
+      L.marker([
+        initLatLng != null ? initLatLng.lat : -41.2858,
+        initLatLng != null ? initLatLng.lng : 174.78682,
+      ]).addTo(this.map);
 
       var Ruler = L.Control.LinearMeasurement.extend({
         // layerSelected: function (e) {
@@ -68,40 +87,110 @@ export default {
         this._div = L.DomUtil.create("div", "info"); // create a div with a class "info"
         return this._div;
       };
+      // console.log("info => ", info);
 
       info.addTo(this.map);
 
-      if (latlngs) {
-        for (var i = 0; i < latlngs.length; i++) {
-          for (var j = 0; j < latlngs[i].length; j++) {
+      var GooglePlacesSearchBox = L.Control.extend({
+        onAdd: function () {
+          var element = document.getElementById("searchBox");
+          return element;
+        },
+      });
+
+      new GooglePlacesSearchBox().addTo(this.map);
+      let _this = this;
+
+      var input = document.getElementById("searchBox");
+      var searchBox = new window.google.maps.places.SearchBox(input);
+
+      searchBox.addListener("places_changed", function () {
+        var places = searchBox.getPlaces();
+
+        if (places.length == 0) {
+          return;
+        }
+
+        var group = L.featureGroup();
+
+        places.forEach(function (place) {
+          setTimeout(() => {
+            localStorage.setItem(
+              "initLatLng",
+              JSON.stringify(place.geometry.location)
+            );
+          }, 100);
+
+          delete L.Icon.Default.prototype._getIconUrl;
+
+          L.Icon.Default.mergeOptions({
+            iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
+            iconUrl: require("leaflet/dist/images/marker-icon.png"),
+            shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
+          });
+          // Create a marker for each place.
+          var marker = L.marker([
+            place.geometry.location.lat(),
+            place.geometry.location.lng(),
+          ]);
+
+          group.addLayer(marker);
+        });
+
+        group.addTo(_this.map);
+
+        _this.map.fitBounds(group.getBounds());
+      });
+
+      this.map.on("zoomend", function (e) {
+        localStorage.setItem("zoom", e.target._zoom);
+        localStorage.setItem(
+          "initLatLng",
+          JSON.stringify(e.sourceTarget._animateToCenter)
+        );
+      });
+      if (
+        this.latlngs != null &&
+        JSON.parse(JSON.stringify(this.latlngs)).length > 0
+      ) {
+        for (var i = 0; i < this.latlngs.length; i++) {
+          for (var j = 0; j < this.latlngs[i].length; j++) {
             //  create a polyline
-            var path = new L.Polyline(latlngs[i][j], {
-              color: latlngs[i][j][0].color,
+            var path = new L.Polyline(this.latlngs[i][j], {
+              color: this.latlngs[i][j][0].color,
               dashArray: "5 5",
               lineCap: "round",
-              weight: 2,
+              weight: 3,
               opacity: 1,
             }).addTo(this.map);
 
             var distance = L.latLng([
-              latlngs[i][j][0].lat,
-              latlngs[i][j][0].lng,
-            ]).distanceTo([latlngs[i][j][1].lat, latlngs[i][j][1].lng]);
+              this.latlngs[i][j][0].lat,
+              this.latlngs[i][j][0].lng,
+            ]).distanceTo([
+              this.latlngs[i][j][1].lat,
+              this.latlngs[i][j][1].lng,
+            ]);
 
-            path.setText(`${distance.toFixed(2)}`, {
+            path.setText(`${distance.toFixed(2)} m`, {
               center: true,
-              attributes: { fill: "yellow" },
+              attributes: { fill: "#ddd" },
               // orientation: "70",
             });
           }
         }
       }
     },
+    handler: function handler(event) {
+      localStorage.removeItem("latlng");
+    },
+    handleInput(e) {
+      e.stopPropagation();
+    },
   },
 };
 </script>
 <style>
-
 h1 {
   font-weight: 300;
   font-size: 2em;
@@ -116,14 +205,6 @@ h1 {
 }
 
 #map {
-  height: 82vh;
+  height: calc(100% - 65px);
 }
-
-/* .cost_label {
-  font-weight: bold;
-}
-
-.cost_value {
-  text-align: left;
-} */
 </style>

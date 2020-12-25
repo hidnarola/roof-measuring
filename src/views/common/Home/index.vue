@@ -1,8 +1,24 @@
 <template>
   <div id="home">
     <ul class="nav">
-      <li class="nav-item"> <a class="nav-link" :class="{ active: isOpenFirst === true }" href="javascript:void(0)" @click="openDiv(`first`)">Draw</a></li>
-      <li class="nav-item"><a class="nav-link" :class="{ active: isOpenSecond === true }" href="javascript:void(0)" @click="openDiv(`second`)" >Edges</a></li>
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          :class="{ active: isOpenFirst === true }"
+          href="javascript:void(0)"
+          @click="openDiv(`first`)"
+          >Draw</a
+        >
+      </li>
+      <li class="nav-item">
+        <a
+          class="nav-link"
+          :class="{ active: isOpenSecond === true }"
+          href="javascript:void(0)"
+          @click="openDiv(`second`)"
+          >Edges</a
+        >
+      </li>
     </ul>
     <div v-if="isOpenFirst">
       <Draw />
@@ -36,7 +52,6 @@ export default {
       } else if (open === "second") {
         this.isOpenSecond = true;
         this.isOpenFirst = false;
-
       }
     },
   },
@@ -48,22 +63,19 @@ export default {
   padding: 0 !important;
 }
 
-#home ul.nav
-{
+#home ul.nav {
   margin-bottom: 2px;
 }
-#home ul.nav li .nav-link
-{
-    font-size: 14px;
-    color: #9c9c9c;
-    font-weight: 400;
-    border-bottom: 6px solid transparent;
-    margin-right: 10px;
-    padding: 16px;
-    transition: all 0.3s linear;
+#home ul.nav li .nav-link {
+  font-size: 14px;
+  color: #9c9c9c;
+  font-weight: 400;
+  border-bottom: 6px solid transparent;
+  margin-right: 10px;
+  padding: 16px;
+  transition: all 0.3s linear;
 }
-#home ul.nav li .nav-link.active
-{
-  border-bottom:6px solid #259ad7;
+#home ul.nav li .nav-link.active {
+  border-bottom: 6px solid #42b883;
 }
 </style>

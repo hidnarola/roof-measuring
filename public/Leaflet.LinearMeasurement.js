@@ -14,18 +14,14 @@
         onAdd: function (map) {
             var container = L.DomUtil.create('div', 'leaflet-control leaflet-bar'),
                 link = L.DomUtil.create('a', 'icon-ruler', container),
-                // remove = L.DomUtil.create('a', 'icon-remove', container),
                 map_container = map.getContainer(),
                 me = this;
-            // let isItTrueForLink = localStorage.getItem("pencil")
 
-            // if (isItTrueForLink) {
-            //     link = L.DomUtil.create('a', 'icon-ruler', container)
-            // }
             link.href = '#';
             link.title = 'Toggle measurement tool';
 
             L.DomEvent.on(link, 'click', L.DomEvent.stop).on(link, 'click', function () {
+
                 if (L.DomUtil.hasClass(link, 'icon-active')) {
                     // me.resetRuler(!!me.mainLayer);
                     // L.DomUtil.removeClass(link, 'icon-active');
@@ -350,7 +346,7 @@
             if (label) {
                 var cicon = L.divIcon({
                     className: 'total-popup-label ' + nodeCls,
-                    html: '<span class="closeTest" style="color: ' + color + ';">' + label + azimut + ' </span>'
+                    html: '<span style="color: ' + color + ';">' + label + azimut + ' </span>'
                 });
 
                 options.icon = cicon;
@@ -394,7 +390,7 @@
 
             var poly = L.polyline(latLngs, {
                 color: this.options.color,
-                weight: 2,
+                weight: 3,
                 opacity: 1,
                 dashArray: dashArray
             });
@@ -410,14 +406,14 @@
             if (L.version.startsWith('0')) {
                 multi = L.multiPolyline(latLngs, {
                     color: this.options.color,
-                    weight: 2,
+                    weight: 3,
                     opacity: 1,
                     dashArray: dashArray
                 });
             } else {
                 multi = L.polyline(latLngs, {
                     color: this.options.color,
-                    weight: 2,
+                    weight: 3,
                     opacity: 1,
                     dashArray: dashArray
                 });
@@ -485,7 +481,6 @@
 
             for (var l in me.latlngsList) {
                 o = me.latlngsList[l];
-                // console.log('me o => ', o);
                 me.sum = o[0].distanceTo(o[1]) / me.UNIT_CONV;
                 // me.sum += o[0].distanceTo(o[1]) / me.UNIT_CONV;
             }
@@ -503,7 +498,6 @@
         },
 
         getMouseMoveHandler: function (e) {
-            // console.log('Called getMouseMoveHandler');
             var azimut = '';
 
             if (this.prevLatlng) {
@@ -619,12 +613,6 @@
 
             L.DomEvent.stop(e);
 
-            // if (this.options.show_azimut) {
-            //     var style = 'color: ' + this.options.contrastingColor + ';';
-            //     azimut = ' <span class="azimut azimut-final" style="' + style + '"> &nbsp; ' + this.lastAzimut + '&deg;</span>';
-            // }
-            // console.log('this.layer => ', this.layer);
-
             var workspace = this.layer,
                 label = this.measure.scalar + ' ' + this.measure.unit + ' ',
                 total_scalar = this.measure.unit === this.SUB_UNIT ? this.measure.scalar / this.UNIT_CONV : this.measure.scalar,
@@ -656,29 +644,10 @@
                 } else {
                     workspace.fireEvent('selected', data);
                 }
-
-                if (L.DomUtil.hasClass(e.originalEvent.target, 'closeTest')) {
-                    // me.mainLayer.removeLayer(workspace);
-                    Object.keys(workspace._layers).map(function (key, index) {
-                        // workspace._layers[key]._latlng.remove(index, 1);
-                        // me.mainLayer.remove(workspace._layers[key]._latlng,1);
-
-                        // var poly = L.polyline(latlngsListData[1], {
-                        //     // color: this.options.color,
-                        //     weight: 2,
-                        //     opacity: 1,
-                        //     // dashArray: dashArray
-                        // });
-
-                        // poly.remove(workspace._layers[key]);
-                    });
-                }
             };
 
             workspace.on('click', fireSelected);
             workspace.fireEvent('selected', data);
-
-
 
             this.resetRuler(false);
         },
@@ -692,7 +661,6 @@
             }
         },
         layerSelected: function (e) {
-            // console.log('Called layerSelected');
         }
     });
 
