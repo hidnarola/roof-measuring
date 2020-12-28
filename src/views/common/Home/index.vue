@@ -58,24 +58,6 @@ export default {
 };
 </script>
 
-<style >
-#home {
-  padding: 0 !important;
-}
-
-#home ul.nav {
-  margin-bottom: 2px;
-}
-#home ul.nav li .nav-link {
-  font-size: 14px;
-  color: #9c9c9c;
-  font-weight: 400;
-  border-bottom: 6px solid transparent;
-  margin-right: 10px;
-  padding: 16px;
-  transition: all 0.3s linear;
-}
-#home ul.nav li .nav-link.active {
-  border-bottom: 6px solid #42b883;
-}
+<style lang="scss" scoped>
+@import '../../../style/home.scss';
 </style>

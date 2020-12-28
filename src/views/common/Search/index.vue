@@ -51,7 +51,6 @@ export default {
         }
       ).addTo(this.map);
 
-      // this.map._layersMaxZoom = 25;
 
       delete L.Icon.Default.prototype._getIconUrl;
 
@@ -115,11 +114,8 @@ export default {
 
         places.forEach(function (place) {
           setTimeout(() => {
-            localStorage.setItem(
-              "initLatLng",
-              JSON.stringify(place.geometry.location)
-            );
-          }, 100);
+            localStorage.setItem("initLatLng", JSON.stringify(place.geometry.location) )
+             }, 100);
 
           delete L.Icon.Default.prototype._getIconUrl;
 
@@ -164,17 +160,11 @@ export default {
               opacity: 1,
             }).addTo(this.map);
 
-            var distance = L.latLng([
-              this.latlngs[i][j][0].lat,
-              this.latlngs[i][j][0].lng,
-            ]).distanceTo([
-              this.latlngs[i][j][1].lat,
-              this.latlngs[i][j][1].lng,
-            ]);
+            var distance = L.latLng([ this.latlngs[i][j][0].lat, this.latlngs[i][j][0].lng, ]).distanceTo([ this.latlngs[i][j][1].lat, this.latlngs[i][j][1].lng, ]);
 
             path.setText(`${distance.toFixed(2)} m`, {
               center: true,
-              attributes: { fill: "#ddd" },
+              attributes: { fill: "yellow" },
               // orientation: "70",
             });
           }
@@ -185,7 +175,7 @@ export default {
       localStorage.removeItem("latlng");
     },
     handleInput(e) {
-      e.stopPropagation();
+       e.stopPropagation();
     },
   },
 };

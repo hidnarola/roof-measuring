@@ -88,25 +88,18 @@ export default {
 
       this.latlngs = JSON.parse(localStorage.getItem("latlng"));
 
-      this.zoom = localStorage.getItem("zoom");
+      this.zoom = localStorage.getItem("zoom") || 16;
 
-      var initLatLng =
-        (localStorage.getItem("initLatLng") != null || localStorage.getItem("initLatLng") != undefined) &&
-        JSON.parse(localStorage.getItem("initLatLng"));
+      var initLatLng = (localStorage.getItem("initLatLng") != null || localStorage.getItem("initLatLng") != undefined) && JSON.parse(localStorage.getItem("initLatLng"));
 
-      this.initLat = initLatLng && initLatLng.lat;
-      this.initLng = initLatLng && initLatLng.lng;
+      this.initLat = initLatLng && initLatLng.lat ||  -41.2858;
+      this.initLng = initLatLng && initLatLng.lng || 174.78682 ;
 
-      this.map = L.map("myMap").setView(
-        [this.initLat, this.initLng],
-        this.zoom
-      );
+      this.map = L.map("myMap").setView( [this.initLat, this.initLng], this.zoom );
+
       L.tileLayer(
         "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        {
-          maxZoom: 20,
-          maxNativeZoom: 19,
-        }
+        { maxZoom: 20, maxNativeZoom: 19, }
       ).addTo(this.map);
 
       L.marker([this.initLat, this.initLng]).addTo(this.map);
@@ -128,10 +121,10 @@ export default {
               opacity: 1,
             }).addTo(this.map);
 
-            var distance = L.latLng([ this.latlngs[i][j][0].lat, this.latlngs[i][j][0].lng, ]).distanceTo([ this.latlngs[i][j][1].lat, this.latlngs[i][j][1].lng, ]);
+            var distance = L.latLng([ this.latlngs[i][j][0].lat, this.latlngs[i][j][0].lng, ]).distanceTo([ this.latlngs[i][j][1].lat, this.latlngs[i][j][1].lng]);
             path.setText(`${distance.toFixed(2)} m`, {
               center: true,
-              attributes: { fill: "#ddd" },
+              attributes: { fill: "yellow" },
               // orientation: "70",
             });
 
@@ -139,14 +132,14 @@ export default {
               if (vueInstance.enableColor) {
                 vueInstance.latlngs = JSON.parse(
                   JSON.stringify(vueInstance.latlngs)
-                ).map((poly) => poly && poly.map((pl) => {
+                ).map( (poly) => poly && poly.map((pl) => {
                       if (
                         pl[0].lat === e.sourceTarget._latlngs[0].lat &&
                         pl[0].lng === e.sourceTarget._latlngs[0].lng &&
                         pl[1].lat === e.sourceTarget._latlngs[1].lat &&
                         pl[1].lng === e.sourceTarget._latlngs[1].lng
                       ) {
-                        return (pl && pl.map((dt) => {
+                        return ( pl && pl.map((dt) => {
                             const additions = {
                               color: vueInstance.selectedColor,
                             };
@@ -159,10 +152,8 @@ export default {
                       }
                     })
                 );
-                e.sourceTarget.setStyle({
-                  color: vueInstance.selectedColor || "#1e0fff",
-                });
-                localStorage.setItem( "latlng", JSON.stringify(vueInstance.latlngs) );
+                e.sourceTarget.setStyle({ color: vueInstance.selectedColor , });
+                localStorage.setItem("latlng", JSON.stringify(vueInstance.latlngs));
               }
             });
 
@@ -170,7 +161,8 @@ export default {
               if (vueInstance.enableDelete) {
                 vueInstance.latlngs = JSON.parse(
                   JSON.stringify(vueInstance.latlngs)
-                ).map((dtt) => dtt.filter((dt) => {
+                ).map((dtt) =>
+                  dtt.filter((dt) => {
                     if (
                       dt[0].lat != e.sourceTarget._latlngs[0].lat &&
                       dt[0].lng != e.sourceTarget._latlngs[0].lng &&
@@ -182,7 +174,10 @@ export default {
                     e.sourceTarget.remove(this.map);
                   })
                 );
-                localStorage.setItem("latlng", JSON.stringify(vueInstance.latlngs) );
+                localStorage.setItem(
+                  "latlng",
+                  JSON.stringify(vueInstance.latlngs)
+                );
               }
             });
           }
@@ -218,158 +213,6 @@ export default {
   },
 };
 </script>
-<style scoped>
-#myMap {
-  height: calc(100% - 65px);
-}
-#colorSelection {
-  position: absolute;
-  background: #fff;
-  z-index: 1111;
-  bottom: 0;
-  padding: 1rem 0;
-  right: 25px;
-  top: 132px;
-  left: auto;
-  width: 10%;
-  max-height: 355px;
-  overflow: auto;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  -webkit-box-shadow: 2px 2px 10px 0px rgba(59, 59, 59, 0.39);
-  -moz-box-shadow: 2px 2px 10px 0px rgba(59, 59, 59, 0.39);
-  box-shadow: 2px 2px 10px 0px rgba(59, 59, 59, 0.39);
-}
-#colorSelection p {
-  padding-left: 10px;
-  margin-bottom: 5px;
-  font-weight: 600;
-  color: #393942;
-  font-size: 15px;
-}
-#colorSelection .name {
-  font-size: 14px;
-  font-family: "Roboto", sans-serif;
-  text-transform: capitalize;
-  padding: 7px 0 7px 10px;
-  cursor: pointer;
-}
-#colorSelection .name:hover {
-  background-color: #f2f2f2;
-}
-.colorbox {
-  display: inline-block;
-  width: 25px;
-  height: 6px;
-  margin-right: 5px;
-  background-color: #fff;
-  border: 2px solid;
-  /* border: 2px dashed; */
-}
-.delete {
-  cursor: pointer;
-}
-.bg-Blue {
-  border-color: #1e0fff;
-}
-.bg-Yellow {
-  border-color: #ffff00;
-}
-.bg-Salmon {
-  border-color: #fa8072;
-}
-.bg-Orange {
-  border-color: #ffa500;
-}
-.bg-Green {
-  border-color: #008000;
-}
-.bg-SandyBrown {
-  border-color: #f4a460;
-}
-.bg-Pink {
-  border-color: #ffc0cb;
-}
-.bg-Tan {
-  border-color: #d2b48c;
-}
-
-.confirmation_popup {
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: 0;
-  z-index: 9999;
-  background: rgba(0, 0, 0, 0.6);
-  bottom: 0;
-}
-.confirmation_body {
-  background: #fff;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  position: relative;
-  max-width: 550px;
-  padding: 30px;
-  border-radius: 3px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
-  text-align: center;
-}
-body.OpenPopup {
-  position: relative;
-}
-.confirmation_popup h6 {
-  font-size: 20px;
-  margin-bottom: 20px;
-  text-transform: capitalize;
-  color: #259ad7;
-}
-.confirmation_popup p {
-  font-size: 16px;
-  color: #666;
-  margin-bottom: 20px;
-}
-.confirmation_popup .btn-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.confirmation_popup .btn-wrap .btn {
-  margin: 0 15px;
-}
-.confirmation_popup .pop-close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 15px;
-  cursor: pointer;
-  transition: all 0.5s;
-}
-.btn {
-  font-size: 16px;
-  line-height: 1.3;
-  padding: 7px 15px;
-}
-.btn-blue {
-  color: #fff;
-  background-color: #259ad7;
-  border-color: #259ad7;
-}
-.btn-trans {
-  color: #333;
-  background-color: #fff;
-  border-color: #999;
-}
-#colorSelection .cm-btn {
-  padding: 0;
-  background: transparent;
-  border: none;
-  margin: 0;
-  color: inherit;
-  transition: all 0.5s;
-}
-#colorSelection .cm-btn:focus {
-  box-shadow: none;
-  outline: none;
-}
+<style lang="scss" scoped>
+@import "../../../style/search/edges.scss";
 </style>
