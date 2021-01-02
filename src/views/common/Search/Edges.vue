@@ -32,9 +32,9 @@
     <div id="colorSelection">
       <p>Edges tool</p>
       <div v-for="(display, idx) in colors" :key="idx">
-        <div @click="handleColor(display.name)" class="name">
-          <span class="colorbox" :class="['bg-' + display.name]"></span>
-          {{ display.name }}
+        <div @click="handleColor(display.color, display.label)" class="name">
+          <span class="colorbox" :class="['bg-' + display.color]"></span>
+          {{ display.label }}
         </div>
       </div>
       <div class="name">
@@ -52,22 +52,25 @@
 </template>
 
 <script>
+import _ from "lodash";
 export default {
   name: "LeafletMap",
   data() {
     return {
       colors: [
-        { name: "Blue", backgroundColor: "#1e0fff" },
-        { name: "Yellow", backgroundColor: "#FFFF00" },
-        { name: "Salmon", backgroundColor: "#FA8072" },
-        { name: "Orange", backgroundColor: "#FFA500" },
-        { name: "Green", backgroundColor: "#008000" },
-        { name: "SandyBrown", backgroundColor: "#F4A460" },
-        { name: "Pink", backgroundColor: "#FFC0CB" },
-        { name: "Tan", backgroundColor: "#D2B48C" },
+        { label: "Eaves", backgroundColor: "#1e0fff", color: "Blue" },
+        { label: "Valleys", backgroundColor: "#FFFF00", color: "Yellow" },
+        { label: "Hips", backgroundColor: "#FA8072", color: "Salmon" },
+        { label: "Ridges", backgroundColor: "#FFA500", color: "Orange" },
+        { label: "Rakes", backgroundColor: "#008000", color: "Green" },
+        // { label: "SandyBrown", backgroundColor: "#F4A460" },
+        // { label: "Pink", backgroundColor: "#FFC0CB" },
+        // { label: "Tan", backgroundColor: "#D2B48C" },
       ],
       selectedColor: null,
-      latlngs: [],
+      selectedLabel: null,
+      latlngs: null,
+      shapes: [],
       enableDelete: false,
       selectedToRemove: [],
       enableColor: false,
@@ -86,108 +89,114 @@ export default {
     initMap() {
       var vueInstance = this;
 
-      this.latlngs = JSON.parse(localStorage.getItem("latlng"));
+      var _finalObject = JSON.parse(
+        JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
+      );
 
       this.zoom = localStorage.getItem("zoom") || 16;
 
-      var initLatLng = (localStorage.getItem("initLatLng") != null || localStorage.getItem("initLatLng") != undefined) && JSON.parse(localStorage.getItem("initLatLng"));
+      var initLatLng =
+        (localStorage.getItem("initLatLng") != null ||
+          localStorage.getItem("initLatLng") != undefined) &&
+        JSON.parse(localStorage.getItem("initLatLng"));
 
-      this.initLat = initLatLng && initLatLng.lat ||  -41.2858;
-      this.initLng = initLatLng && initLatLng.lng || 174.78682 ;
+      this.initLat = (initLatLng && initLatLng.lat) || -41.2858;
+      this.initLng = (initLatLng && initLatLng.lng) || 174.78682;
 
-      this.map = L.map("myMap").setView( [this.initLat, this.initLng], this.zoom );
+      this.map = L.map("myMap", {
+        attributionControl: false,
+        zoomControl: false,
+        fadeAnimation: false,
+        zoomAnimation: false,
+      }).setView([this.initLat, this.initLng], this.zoom);
 
       L.tileLayer(
         "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        { maxZoom: 20, maxNativeZoom: 19, }
+        { maxZoom: 20, maxNativeZoom: 19 }
       ).addTo(this.map);
 
       L.marker([this.initLat, this.initLng]).addTo(this.map);
 
-      if (
-        this.latlngs != null &&
-        JSON.parse(JSON.stringify(this.latlngs)).length > 0
-      ) {
-        for (var i = 0; i < this.latlngs.length; i++) {
-          for (var j = 0; j < this.latlngs[i].length; j++) {
+      if (_finalObject.shape != null && _finalObject.shape.length > 0) {
+        _finalObject.shape.map((shp) => {
+          for (var i = 0; i < shp.path.length; i++) {
             //  create a polyline
-            var path = new L.Polyline(this.latlngs[i][j], {
+            var poly = new L.Polyline(shp.path[i], {
               color: vueInstance.selectedColor
                 ? vueInstance.selectedColor
-                : this.latlngs[i][j][0].color,
+                : shp.path[i][0].color,
               dashArray: "5 5",
               lineCap: "round",
               weight: 3,
               opacity: 1,
+              // showMeasurements: true,
+              // measurementOptions: { imperial: true },
             }).addTo(this.map);
 
-            var distance = L.latLng([ this.latlngs[i][j][0].lat, this.latlngs[i][j][0].lng, ]).distanceTo([ this.latlngs[i][j][1].lat, this.latlngs[i][j][1].lng]);
-            path.setText(`${distance.toFixed(2)} m`, {
+            var distance = L.latLng([
+              shp.path[i][0].lat,
+              shp.path[i][0].lng,
+            ]).distanceTo([shp.path[i][1].lat, shp.path[i][1].lng]);
+
+            shp.path[i][0]["length"] = `${distance.toFixed(1)} m`;
+            shp.path[i][1]["length"] = `${distance.toFixed(1)} m`;
+
+            poly.setText(`${distance.toFixed(1)} m`, {
               center: true,
               attributes: { fill: "yellow" },
-              // orientation: "70",
             });
-
-            path.on("click", function (e) {
+            poly.on("click", function (e) {
               if (vueInstance.enableColor) {
-                vueInstance.latlngs = JSON.parse(
-                  JSON.stringify(vueInstance.latlngs)
-                ).map( (poly) => poly && poly.map((pl) => {
-                      if (
-                        pl[0].lat === e.sourceTarget._latlngs[0].lat &&
-                        pl[0].lng === e.sourceTarget._latlngs[0].lng &&
-                        pl[1].lat === e.sourceTarget._latlngs[1].lat &&
-                        pl[1].lng === e.sourceTarget._latlngs[1].lng
-                      ) {
-                        return ( pl && pl.map((dt) => {
-                            const additions = {
-                              color: vueInstance.selectedColor,
-                            };
-                            const b = { ...dt, ...additions };
-                            return b;
-                          })
-                        );
-                      } else {
-                        return pl;
-                      }
-                    })
+                _finalObject.shape.map((poly, index) => {
+                  poly.path.map((pl, index) => {
+                    if (
+                      pl[0].lat === e.sourceTarget._latlngs[0].lat &&
+                      pl[0].lng === e.sourceTarget._latlngs[0].lng &&
+                      pl[1].lat === e.sourceTarget._latlngs[1].lat &&
+                      pl[1].lng === e.sourceTarget._latlngs[1].lng
+                    ) {
+                      console.log("pl matched => ", pl);
+                      pl.map((p) => {
+                        p.color = vueInstance.selectedColor;
+                        (p.isColorChanged = true),
+                          (p.label = vueInstance.selectedLabel);
+                      });
+                    }
+                  });
+                });
+                e.sourceTarget.setStyle({ color: vueInstance.selectedColor });
+                localStorage.setItem(
+                  "finalObject",
+                  JSON.stringify(_finalObject)
                 );
-                e.sourceTarget.setStyle({ color: vueInstance.selectedColor , });
-                localStorage.setItem("latlng", JSON.stringify(vueInstance.latlngs));
               }
             });
 
-            path.on("click", function (e) {
+            poly.on("click", function (e) {
               if (vueInstance.enableDelete) {
-                vueInstance.latlngs = JSON.parse(
-                  JSON.stringify(vueInstance.latlngs)
-                ).map((dtt) =>
-                  dtt.filter((dt) => {
+                _finalObject.shape.map((poly, index) => {
+                  poly.path.map((pl, i) => {
                     if (
-                      dt[0].lat != e.sourceTarget._latlngs[0].lat &&
-                      dt[0].lng != e.sourceTarget._latlngs[0].lng &&
-                      dt[1].lat != e.sourceTarget._latlngs[1].lat &&
-                      dt[1].lng != e.sourceTarget._latlngs[1].lng
+                    pl[0].lat == e.sourceTarget._latlngs[0].lat && pl[0].lng == e.sourceTarget._latlngs[0].lng && pl[1].lat == e.sourceTarget._latlngs[1].lat && pl[1].lng == e.sourceTarget._latlngs[1].lng
                     ) {
-                      return dt;
+                      poly.path.splice(poly.path.indexOf(pl), 1);
                     }
                     e.sourceTarget.remove(this.map);
-                  })
-                );
-                localStorage.setItem(
-                  "latlng",
-                  JSON.stringify(vueInstance.latlngs)
-                );
+                  });
+                });
+                localStorage.setItem( "finalObject", JSON.stringify(_finalObject));
               }
             });
+            localStorage.setItem("finalObject", JSON.stringify(_finalObject));
           }
-        }
+        });
       }
     },
-    handleColor(color) {
+    handleColor(color, label) {
       this.enableColor = true;
-      this.selectedColor = color;
       this.enableDelete = false;
+      this.selectedColor = color;
+      this.selectedLabel = label;
     },
     handleRemove() {
       this.enableDelete = true;
@@ -195,7 +204,7 @@ export default {
     },
     handleRemoveAll() {
       this.latlngs = [];
-      localStorage.removeItem("latlng");
+      localStorage.removeItem("finalObject");
       this.map.off();
       this.map.remove();
       this.initMap();

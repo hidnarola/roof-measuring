@@ -91,8 +91,11 @@
             this.dblClickEventFn = function (e) {
                 L.DomEvent.stop(e);
             };
+            var poly = []
+            me.tempPolygon = []
 
             this.clickEventFn = function (e) {
+                me.tempPolygon.push([e.latlng.lat, e.latlng.lng])
 
                 if (me.clickHandle) {
                     clearTimeout(me.clickHandle);
@@ -102,7 +105,7 @@
                         me.preClick(e);
                         me.getMouseClickHandler(e);
                     }
-                    me.getDblClickHandler(e);
+                    me.getDblClickHandler(e, poly);
                 }
                 else {
                     me.preClick(e);
@@ -172,6 +175,7 @@
             this.totalIcon = null;
             this.total = null;
             this.lastCircle = null;
+            this.tempPolygon = []
 
 
 
@@ -579,11 +583,24 @@
             }
         },
 
-        getDblClickHandler: function (e) {
+        getDblClickHandler: function (e, poly = []) {
             var azimut = '',
                 me = this;
 
-            const itPolyData = JSON.parse(localStorage.getItem("latlng")) || []
+            const polygon = JSON.parse(localStorage.getItem("polygon")) || []
+
+            if (me.tempPolygon.length > 0) {
+                polygon.push(me.tempPolygon)
+                localStorage.setItem("polygon", JSON.stringify(polygon))
+            }
+            // ------------------- latlong for draw -------------
+
+            var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [] }
+            console.log('finalObject linear => ', finalObject);
+
+            var shapes = finalObject.shape || []
+            // var totalArea = finalObject.shape.totalArea || 0
+            // console.log('totalArea => ', totalArea);
 
             var tempArray = []
             var tmpo = JSON.parse(JSON.stringify(me.latlngsList))
@@ -591,19 +608,29 @@
             tempArray.push((tmpo)[tmpo.length - 1][1], JSON.parse(JSON.stringify(e.latlng)))
             tmpo.push(tempArray)
 
-            itPolyData.push(tmpo)
+            if (finalObject && finalObject.shape.length < 0) {
+                finalObject.shape = shapes
+                // finalObject.totalArea = totalArea
+            } else {
+                shapes.push({ path: tmpo, area: 0 })
+                finalObject.shape = shapes
+                // finalObject.totalArea = totalArea
+            }
 
-            itPolyData.map(poly => {
-                poly.map(pl => {
+            // ------------------------final
+
+            finalObject.shape.map(poly => {
+                poly.path.map(pl => {
                     pl.map(p => {
-                        if (!p.hasOwnProperty("color")) {
-                            p.color = "#1e0fff"
+                        if (!p.hasOwnProperty("color") && !p.hasOwnProperty("length") && !p.hasOwnProperty("isColorChanged") && !p.hasOwnProperty("label")) {
+                            {
+                                p.color = "#1e0fff", p.length = `${0} m`, p.isColorChanged = false, p.label = null
+                            }
                         }
                     })
                 })
             })
-
-            localStorage.setItem("latlng", JSON.stringify(itPolyData))
+            localStorage.setItem("finalObject", JSON.stringify(finalObject))
 
             if (!this.total) {
                 return;
@@ -640,7 +667,7 @@
             var fireSelected = function (e) {
                 if (L.DomUtil.hasClass(e.originalEvent.target, 'close')) {
                     me.mainLayer.removeLayer(workspace);
-                    localStorage.removeItem("latlng")
+                    localStorage.removeItem("finalObject")
                 } else {
                     workspace.fireEvent('selected', data);
                 }

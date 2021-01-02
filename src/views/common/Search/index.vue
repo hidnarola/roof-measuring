@@ -17,6 +17,7 @@ export default {
     return {
       map: null,
       latlngs: [],
+      value: null,
     };
   },
   mounted() {
@@ -33,7 +34,11 @@ export default {
       var zoom = localStorage.getItem("zoom");
       var initLatLng = JSON.parse(localStorage.getItem("initLatLng"));
 
-      this.latlngs = JSON.parse(localStorage.getItem("latlng"));
+      this.latlngs = JSON.parse(localStorage.getItem("finalObject")) || null;
+
+      var _finalObject = JSON.parse(
+        JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
+      );
 
       this.map = L.map("map").setView(
         [
@@ -50,7 +55,6 @@ export default {
           maxNativeZoom: 19,
         }
       ).addTo(this.map);
-
 
       delete L.Icon.Default.prototype._getIconUrl;
 
@@ -86,7 +90,6 @@ export default {
         this._div = L.DomUtil.create("div", "info"); // create a div with a class "info"
         return this._div;
       };
-      // console.log("info => ", info);
 
       info.addTo(this.map);
 
@@ -113,9 +116,14 @@ export default {
         var group = L.featureGroup();
 
         places.forEach(function (place) {
+          vueInstance.$store.commit("SELECTED_PLACE", place.formatted_address);
+
           setTimeout(() => {
-            localStorage.setItem("initLatLng", JSON.stringify(place.geometry.location) )
-             }, 100);
+            localStorage.setItem(
+              "initLatLng",
+              JSON.stringify(place.geometry.location)
+            );
+          }, 100);
 
           delete L.Icon.Default.prototype._getIconUrl;
 
@@ -145,37 +153,50 @@ export default {
           JSON.stringify(e.sourceTarget._animateToCenter)
         );
       });
-      if (
-        this.latlngs != null &&
-        JSON.parse(JSON.stringify(this.latlngs)).length > 0
-      ) {
-        for (var i = 0; i < this.latlngs.length; i++) {
-          for (var j = 0; j < this.latlngs[i].length; j++) {
+
+      if (_finalObject && _finalObject.shape && _finalObject.shape.length > 0) {
+        _finalObject.shape.map((shp) => {
+          console.log("shp => ", shp);
+          for (var i = 0; i < shp.path.length; i++) {
             //  create a polyline
-            var path = new L.Polyline(this.latlngs[i][j], {
-              color: this.latlngs[i][j][0].color,
+            var poly = new L.Polyline(shp.path[i], {
+              color: vueInstance.selectedColor
+                ? vueInstance.selectedColor
+                : shp.path[i][0].color,
               dashArray: "5 5",
               lineCap: "round",
               weight: 3,
               opacity: 1,
+              // showMeasurements: true,
+              // measurementOptions: { imperial: true },
             }).addTo(this.map);
 
-            var distance = L.latLng([ this.latlngs[i][j][0].lat, this.latlngs[i][j][0].lng, ]).distanceTo([ this.latlngs[i][j][1].lat, this.latlngs[i][j][1].lng, ]);
+            var distance = L.latLng([
+              shp.path[i][0].lat,
+              shp.path[i][0].lng,
+            ]).distanceTo([shp.path[i][1].lat, shp.path[i][1].lng]);
 
-            path.setText(`${distance.toFixed(2)} m`, {
+            shp.path[i][0]["length"] = `${distance.toFixed(1)} m`;
+            shp.path[i][1]["length"] = `${distance.toFixed(1)} m`;
+
+            poly.setText(`${distance.toFixed(1)} m`, {
               center: true,
               attributes: { fill: "yellow" },
               // orientation: "70",
             });
+
+            localStorage.setItem("finalObject", JSON.stringify(_finalObject));
           }
-        }
+        });
       }
     },
     handler: function handler(event) {
-      localStorage.removeItem("latlng");
+      localStorage.clear();
+      // localStorage.removeItem("latlng");
+      // localStorage.removeItem("polygon");
     },
     handleInput(e) {
-       e.stopPropagation();
+      e.stopPropagation();
     },
   },
 };
