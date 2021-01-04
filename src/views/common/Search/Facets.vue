@@ -2,13 +2,12 @@
   <div>
     <button @click="handlePdf" class="download-pdf-btn">Download Pdf</button>
     <div id="myMap"></div>
-    <div id="placehere"></div>
   </div>
 </template>
 
 <script>
 import { jsPDF } from "jspdf";
-
+import "jspdf-autotable";
 export default {
   name: "LeafletMap",
   data() {
@@ -75,7 +74,6 @@ export default {
       let polyStore =
         this.polyData &&
         this.polyData.map((shape) => {
-          console.log("shape => ", shape);
           var polygon = L.polygon([shape], {
             showMeasurements: true,
             // measurementOptions: { imperial: true },
@@ -89,12 +87,8 @@ export default {
       // setting out the area measurements
       let areas = [];
       this.map.eachLayer(function (layer) {
-        console.log(
-          "this.map layer => ",
-          layer
-        );
-        if (layer._title == "Total area") {+
-          areas.push(layer._measurement);
+        if (layer._title == "Total area") {
+          +areas.push(layer._measurement);
         }
       });
 
@@ -102,14 +96,18 @@ export default {
         this.totalArea = this.totalArea + parseFloat(areaData);
         _finalObject.shape[i].area = parseFloat(areaData);
         _finalObject.shape[i].unit = areaData.split(" ").pop();
-        _finalObject.totalArea =  this.totalArea
+        _finalObject.totalArea = this.totalArea;
         _finalObject.unit = areaData.split(" ").pop();
       });
 
       localStorage.setItem("finalObject", JSON.stringify(_finalObject));
 
       // ----- polyline draw
-      if (_finalObject.shape != null && _finalObject.shape.length > 0) {
+      if (
+        _finalObject &&
+        _finalObject.shape != null &&
+        _finalObject.shape.length > 0
+      ) {
         _finalObject.shape.map((shp) => {
           for (var i = 0; i < shp.path.length; i++) {
             //  create a polyline
@@ -127,7 +125,7 @@ export default {
               shp.path[i][0].lat,
               shp.path[i][0].lng,
             ]).distanceTo([shp.path[i][1].lat, shp.path[i][1].lng]);
-            this.finalObject = _finalObject
+            this.finalObject = _finalObject;
           }
         });
       }
@@ -141,37 +139,101 @@ export default {
       const dataURL = await domtoimage.toPng(mapElement, { width, height });
       this.imgElement = new Image();
       this.imgElement.src = dataURL;
-      document.getElementById("placehere").appendChild(this.imgElement);
     },
 
     async handlePdf() {
       await this.createMapImage();
       const doc = new jsPDF();
+      // const doc = new jsPDF('landscape');
       let pageHeight = doc.internal.pageSize.height;
+
+      // -------table data start -------------
+      var edgesTable = [];
+      var areaTable = [];
+
+      var edgesCol = ["Sr. No.", "Edges", "Color", "Measurement"];
+      var areaCol = ["Sr. No.", "Area", "Total area"];
+      var edgesRows = [];
+      var areaRows = [];
+
+      JSON.parse(JSON.stringify(this.finalObject)).shape.map((latlng, i) => {
+        areaTable.push({
+          index: `Shape - ${i + 1}`,
+          area: latlng.area + latlng.unit,
+          totalArea:
+            JSON.parse(JSON.stringify(this.finalObject)).totalArea +
+            JSON.parse(JSON.stringify(this.finalObject)).unit,
+        });
+
+        latlng.path.map((ltlg, j) => {
+          if (ltlg[0].isColorChanged) {
+            edgesTable.push({
+              index: j + 1,
+              label: ltlg[0].label,
+              color: ltlg[0].color,
+              length: ltlg[0].length,
+            });
+          }
+        });
+      });
+      // -------table data end -------------
 
       // Before adding new content
       let y = 500; // Height position of new content
 
+      doc.setFontSize(20);
+      doc.setTextColor("Gray");
       doc.text("Roof Report", 10, 10);
-      doc.text( this.$store.state.map.place ? this.$store.state.map.place : "", 20, 20 );
-      doc.text(`${this.polyData.length} Facets`, 30, 30);
-      doc.text(`Total Facet Area : ${JSON.parse(JSON.stringify(this.finalObject)).totalArea} ${ JSON.parse(JSON.stringify(this.finalObject)).unit}`, 30, 40);
+      doc.setFontSize(17);
+      doc.setTextColor("Gray");
+      doc.text(
+        this.$store.state.map.place ? this.$store.state.map.place : "",
+        20,
+        20
+      );
+      doc.setFontSize(16);
+      doc.setTextColor("Gray");
+      doc.text(`${this.polyData.length} Facets`, 20, 30);
+      doc.text(
+        `Total Facet Area : ${
+          JSON.parse(JSON.stringify(this.finalObject)).totalArea
+        } ${JSON.parse(JSON.stringify(this.finalObject)).unit}`,
+        20,
+        40
+      );
 
       var widthImg = doc.internal.pageSize.getWidth();
       var heightImg = doc.internal.pageSize.getHeight();
-      doc.addImage(this.imgElement, "PNG", 30, 50, 50, 50);
+
+      doc.addImage(this.imgElement, "PNG", 20, 50, 170, 200);
 
       if (y >= pageHeight) {
         doc.addPage();
         y = 0; // Restart height position
         doc.text(`Length Measurement Report`, 20, 20);
 
-        JSON.parse(JSON.stringify(this.finalObject)).shape.map((latlng, i) => {
-          latlng.path.map((ltlg, j) => {
-            if (ltlg[0].isColorChanged) {
-              doc.text( `${ltlg[0].label} : ${ltlg[0].length ? ltlg[0].length : 0}`, 30, 20 + (i * 10 + 10) );
-            }
-          });
+        edgesTable.forEach((element, i) => {
+          var temp = [i, element.label, element.color, element.length];
+          edgesRows.push(temp);
+        });
+
+        areaTable.forEach((element, i) => {
+          var temp1 = [element.index, element.area, element.totalArea];
+          areaRows.push(temp1);
+        });
+
+        doc.autoTable(edgesCol, edgesRows, {
+          startY: 10 * edgesTable.length,
+        });
+
+        doc.text(
+          `Area Measurement Report`,
+          20,
+          10 + 10 * edgesTable.length * areaTable.length - 5
+        );
+
+        doc.autoTable(areaCol, areaRows, {
+          startY: 10 + 10 * edgesTable.length * areaTable.length,
         });
       }
       doc.save("map_report.pdf");

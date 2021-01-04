@@ -2,7 +2,7 @@ export default {
 	state: {
 		title: 'Admin',
 		sidebar: {
-			open: true,
+			open: false,
 		},
 		tipbar: {
 			open: false,

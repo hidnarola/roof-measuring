@@ -58,18 +58,18 @@ export default {
   data() {
     return {
       colors: [
-        { label: "Eaves", backgroundColor: "#1e0fff", color: "Blue" },
+        { label: "Eaves", backgroundColor: "#F4A460", color: "SandyBrown" },
         { label: "Valleys", backgroundColor: "#FFFF00", color: "Yellow" },
         { label: "Hips", backgroundColor: "#FA8072", color: "Salmon" },
         { label: "Ridges", backgroundColor: "#FFA500", color: "Orange" },
         { label: "Rakes", backgroundColor: "#008000", color: "Green" },
-        // { label: "SandyBrown", backgroundColor: "#F4A460" },
+        { label: "Unspecified", backgroundColor: "#1e0fff", color: "Blue" },
         // { label: "Pink", backgroundColor: "#FFC0CB" },
         // { label: "Tan", backgroundColor: "#D2B48C" },
       ],
       selectedColor: null,
       selectedLabel: null,
-      latlngs: null,
+      finalObject: null,
       shapes: [],
       enableDelete: false,
       selectedToRemove: [],
@@ -117,7 +117,11 @@ export default {
 
       L.marker([this.initLat, this.initLng]).addTo(this.map);
 
-      if (_finalObject.shape != null && _finalObject.shape.length > 0) {
+      if (
+        _finalObject &&
+        _finalObject.shape != null &&
+        _finalObject.shape.length > 0
+      ) {
         _finalObject.shape.map((shp) => {
           for (var i = 0; i < shp.path.length; i++) {
             //  create a polyline
@@ -155,7 +159,6 @@ export default {
                       pl[1].lat === e.sourceTarget._latlngs[1].lat &&
                       pl[1].lng === e.sourceTarget._latlngs[1].lng
                     ) {
-                      console.log("pl matched => ", pl);
                       pl.map((p) => {
                         p.color = vueInstance.selectedColor;
                         (p.isColorChanged = true),
@@ -177,17 +180,24 @@ export default {
                 _finalObject.shape.map((poly, index) => {
                   poly.path.map((pl, i) => {
                     if (
-                    pl[0].lat == e.sourceTarget._latlngs[0].lat && pl[0].lng == e.sourceTarget._latlngs[0].lng && pl[1].lat == e.sourceTarget._latlngs[1].lat && pl[1].lng == e.sourceTarget._latlngs[1].lng
+                      pl[0].lat == e.sourceTarget._latlngs[0].lat &&
+                      pl[0].lng == e.sourceTarget._latlngs[0].lng &&
+                      pl[1].lat == e.sourceTarget._latlngs[1].lat &&
+                      pl[1].lng == e.sourceTarget._latlngs[1].lng
                     ) {
                       poly.path.splice(poly.path.indexOf(pl), 1);
                     }
                     e.sourceTarget.remove(this.map);
                   });
                 });
-                localStorage.setItem( "finalObject", JSON.stringify(_finalObject));
+                localStorage.setItem(
+                  "finalObject",
+                  JSON.stringify(_finalObject)
+                );
               }
             });
             localStorage.setItem("finalObject", JSON.stringify(_finalObject));
+            this.finalObject = _finalObject;
           }
         });
       }
@@ -203,8 +213,10 @@ export default {
       this.enableColor = false;
     },
     handleRemoveAll() {
-      this.latlngs = [];
+      console.log("Hii in handleRemoveAll");
+      this.finalObject = null;
       localStorage.removeItem("finalObject");
+      localStorage.removeItem("polygon");
       this.map.off();
       this.map.remove();
       this.initMap();
