@@ -14,20 +14,12 @@ export default {
     return {
       finalObject: null,
       selectedColor: null,
-      latlngs: [],
-      enableDelete: false,
-      selectedToRemove: [],
-      enableColor: false,
-      rotated: false,
-      isOpenModel: false,
       map: null,
       initLat: -41.2858,
       initLng: 174.78682,
       zoom: 16,
-      tileLayer: null,
       imgElement: null,
       polyData: [],
-      area: null,
       totalArea: null,
     };
   },
@@ -77,7 +69,7 @@ export default {
           var polygon = L.polygon([shape], {
             showMeasurements: true,
             // measurementOptions: { imperial: true },
-            color: "#1e0fff",
+            color: "Blue",
             dashArray: "5 5",
             lineCap: "round",
             weight: 0,
@@ -92,15 +84,14 @@ export default {
         }
       });
 
-      areas.map((areaData, i) => {
-        this.totalArea = this.totalArea + parseFloat(areaData);
-        _finalObject.shape[i].area = parseFloat(areaData);
-        _finalObject.shape[i].unit = areaData.split(" ").pop();
-        _finalObject.totalArea = this.totalArea;
-        _finalObject.unit = areaData.split(" ").pop();
-      });
-
-      localStorage.setItem("finalObject", JSON.stringify(_finalObject));
+      areas &&
+        areas.map((areaData, i) => {
+          this.totalArea = this.totalArea + parseFloat(areaData);
+          _finalObject.shape[i].area = parseFloat(areaData);
+          _finalObject.shape[i].unit = areaData.split(" ").pop();
+          _finalObject.totalArea = this.totalArea;
+          _finalObject.unit = areaData.split(" ").pop();
+        });
 
       // ----- polyline draw
       if (
@@ -125,38 +116,87 @@ export default {
               shp.path[i][0].lat,
               shp.path[i][0].lng,
             ]).distanceTo([shp.path[i][1].lat, shp.path[i][1].lng]);
-            this.finalObject = _finalObject;
           }
         });
       }
+      _finalObject &&
+        _finalObject.shape.map((shape, i) => {
+          shape &&
+            shape.path.map((pth) => {
+              let length = parseFloat(pth[0].length.split(" ", 1).pop());
+              let unit = pth[0].length.split(" ").pop();
+              if (shape.type && shape.type[pth[0].label]) {
+                shape.type[pth[0].label].length += length;
+              } else {
+                shape.type = {
+                  ...shape.type,
+                  [pth[0].label]: {
+                    label: pth[0].label,
+                    color: pth[0].color,
+                    length: length,
+                    unit,
+                  },
+                };
+              }
+
+              let _length = parseFloat(pth[0].length.split(" ", 1).pop());
+              let _unit = pth[0].length.split(" ").pop();
+              if (
+                _finalObject.measurement &&
+                _finalObject.measurement[pth[0].label]
+              ) {
+                _finalObject.measurement[pth[0].label].length += _length;
+              } else {
+                _finalObject.measurement = {
+                  ..._finalObject.measurement,
+                  [pth[0].label]: {
+                    label: pth[0].label,
+                    color: pth[0].color,
+                    length: _length,
+                    unit: _unit,
+                  },
+                };
+              }
+              _finalObject.totalFacets = this.polyData.length;
+              this.finalObject = _finalObject;
+              localStorage.setItem("finalObject", JSON.stringify(_finalObject));
+            });
+        });
 
       // ------ polyline end
     },
     async createMapImage() {
-      const width = 1100;
-      const height = 900;
+      // DomtoImage
       const mapElement = document.getElementById("myMap");
-      const dataURL = await domtoimage.toPng(mapElement, { width, height });
-      this.imgElement = new Image();
-      this.imgElement.src = dataURL;
+      const scale = 2;
+      this.imgElement = await domtoimage.toPng(mapElement, {
+        height: mapElement.offsetHeight * scale,
+        style: {
+          transform: `scale(${scale}) translate(${
+            mapElement.offsetWidth / 2 / scale
+          }px, ${mapElement.offsetHeight / 2 / scale}px)`,
+        },
+        width: mapElement.offsetWidth * scale,
+      });
     },
 
     async handlePdf() {
       await this.createMapImage();
       const doc = new jsPDF();
-      // const doc = new jsPDF('landscape');
       let pageHeight = doc.internal.pageSize.height;
 
       // -------table data start -------------
       var edgesTable = [];
       var areaTable = [];
 
-      var edgesCol = ["Sr. No.", "Edges", "Color", "Measurement"];
+      var edgesCol = ["Sr. No.", "Edges", "Color", "Measurement", "Unit"];
       var areaCol = ["Sr. No.", "Area", "Total area"];
       var edgesRows = [];
       var areaRows = [];
+      let _printData = JSON.parse(JSON.stringify(this.finalObject));
+      console.log("_printData => ", _printData);
 
-      JSON.parse(JSON.stringify(this.finalObject)).shape.map((latlng, i) => {
+      _printData.shape.map((latlng, i) => {
         areaTable.push({
           index: `Shape - ${i + 1}`,
           area: latlng.area + latlng.unit,
@@ -164,18 +204,34 @@ export default {
             JSON.parse(JSON.stringify(this.finalObject)).totalArea +
             JSON.parse(JSON.stringify(this.finalObject)).unit,
         });
+      });
 
-        latlng.path.map((ltlg, j) => {
-          if (ltlg[0].isColorChanged) {
-            edgesTable.push({
-              index: j + 1,
-              label: ltlg[0].label,
-              color: ltlg[0].color,
-              length: ltlg[0].length,
-            });
-          }
+      Object.keys(_printData.measurement).map((key, index) => {
+        edgesTable.push({
+          index: index,
+          label: key,
+          color: _printData.measurement[key].color,
+          length: _printData.measurement[key].length,
+          unit: _printData.measurement[key].unit,
         });
       });
+
+      edgesTable.forEach((element, i) => {
+        var temp = [
+          i,
+          element.label,
+          element.color,
+          element.length,
+          element.unit,
+        ];
+        edgesRows.push(temp);
+      });
+
+      areaTable.forEach((element, i) => {
+        var temp1 = [element.index, element.area, element.totalArea];
+        areaRows.push(temp1);
+      });
+
       // -------table data end -------------
 
       // Before adding new content
@@ -183,7 +239,8 @@ export default {
 
       doc.setFontSize(20);
       doc.setTextColor("Gray");
-      doc.text("Roof Report", 10, 10);
+      doc.setFontSize(30);
+      doc.text(10, 10, "Roof Report");
       doc.setFontSize(17);
       doc.setTextColor("Gray");
       doc.text(
@@ -193,48 +250,75 @@ export default {
       );
       doc.setFontSize(16);
       doc.setTextColor("Gray");
-      doc.text(`${this.polyData.length} Facets`, 20, 30);
+      doc.text(`${_printData.totalFacets} Facets`, 20, 30);
       doc.text(
-        `Total Facet Area : ${
-          JSON.parse(JSON.stringify(this.finalObject)).totalArea
-        } ${JSON.parse(JSON.stringify(this.finalObject)).unit}`,
+        `Total Facet Area : ${_printData.totalArea} ${_printData.unit}`,
         20,
         40
       );
 
-      var widthImg = doc.internal.pageSize.getWidth();
-      var heightImg = doc.internal.pageSize.getHeight();
-
-      doc.addImage(this.imgElement, "PNG", 20, 50, 170, 200);
+      doc.addImage(this.imgElement, "PNG", 20, 50, 180, 150);
 
       if (y >= pageHeight) {
         doc.addPage();
         y = 0; // Restart height position
         doc.text(`Length Measurement Report`, 20, 20);
 
-        edgesTable.forEach((element, i) => {
-          var temp = [i, element.label, element.color, element.length];
-          edgesRows.push(temp);
-        });
-
-        areaTable.forEach((element, i) => {
-          var temp1 = [element.index, element.area, element.totalArea];
-          areaRows.push(temp1);
-        });
-
         doc.autoTable(edgesCol, edgesRows, {
-          startY: 10 * edgesTable.length,
+          startY: 20 * edgesTable.length,
         });
 
-        doc.text(
-          `Area Measurement Report`,
-          20,
-          10 + 10 * edgesTable.length * areaTable.length - 5
-        );
+        doc.addPage();
+        doc.text(`Area Measurement Report`, 20, 20);
 
-        doc.autoTable(areaCol, areaRows, {
-          startY: 10 + 10 * edgesTable.length * areaTable.length,
+        doc.autoTable(areaCol, areaRows, { startY: 30});
+        _printData.shape.map((shp, i) => {
+          doc.addPage();
+          doc.setFontSize(16);
+          doc.setTextColor("Gray");
+          doc.text(`Structure #${i} Summary`, 20, i * 10 + 10);
+          doc.setFontSize(12);
+          doc.setTextColor("Gray");
+          doc.text(
+            `Total Roof Facets ${
+              _printData.totalFacets / _printData.totalFacets
+            } facets`,
+            20,
+            i * 10 + 20
+          );
+          let stayY;
+
+          Object.keys(shp.type).map((key, index) => {
+            doc.text( `Total ${shp.type[key].color}  ${shp.type[key].label} ${shp.type[key].length} ${shp.type[key].unit}`, 20, i * 10 + 30 + index * 10);
+            stayY = i * 10 + 30 + index * 10;
+            // doc.text(
+            //   `Total  Hips + Ridges ${shp.type[key].length}`,
+            //   20,
+            //   stayY + 10
+            // );
+            // doc.text(
+            //   `Total Eaves + Rakes  ${shp.type[key].color}  ${shp.type[key].label} ${shp.type[key].length}`,
+            //   20,
+            //   20 + i * 150 + 10 * index + 10
+            // );
+          });
+          doc.text(`Total Roof Area ${shp.area + shp.unit}`, 20, stayY + 10);
         });
+        doc.addPage();
+        doc.setFontSize(16);
+        doc.setTextColor("Gray");
+        doc.text(`All Structures Summary `, 20, 20);
+        doc.setFontSize(12);
+        doc.setTextColor("Gray");
+        doc.text(`Total Roof Area ${_printData.totalArea} ${_printData.unit}`, 20, 30 );
+        doc.text(`Total Roof Facets ${_printData.totalFacets} facets`, 20, 40);
+
+        Object.keys(_printData.measurement).map((key, index) => {
+          doc.text( `Total ${key} ${_printData.measurement[key].length} ${_printData.measurement[key].unit}`, 20, 50 + index * 10);
+        });
+
+        // Hips + Ridges 225ft 8in
+        // Eaves + Rakes 294ft 10in
       }
       doc.save("map_report.pdf");
     },

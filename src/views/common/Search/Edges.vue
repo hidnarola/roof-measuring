@@ -161,17 +161,14 @@ export default {
                     ) {
                       pl.map((p) => {
                         p.color = vueInstance.selectedColor;
-                        (p.isColorChanged = true),
-                          (p.label = vueInstance.selectedLabel);
+                        p.isColorChanged = true;
+                        p.label = vueInstance.selectedLabel;
                       });
                     }
                   });
                 });
                 e.sourceTarget.setStyle({ color: vueInstance.selectedColor });
-                localStorage.setItem(
-                  "finalObject",
-                  JSON.stringify(_finalObject)
-                );
+                localStorage.setItem("finalObject", JSON.stringify(_finalObject));
               }
             });
 

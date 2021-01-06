@@ -16,7 +16,6 @@ export default {
   data() {
     return {
       map: null,
-      latlngs: [],
       value: null,
     };
   },
@@ -33,8 +32,6 @@ export default {
       //simple map
       var zoom = localStorage.getItem("zoom");
       var initLatLng = JSON.parse(localStorage.getItem("initLatLng"));
-
-      this.latlngs = JSON.parse(localStorage.getItem("finalObject")) || null;
 
       var _finalObject = JSON.parse(
         JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
@@ -107,6 +104,10 @@ export default {
       var searchBox = new window.google.maps.places.SearchBox(input);
 
       searchBox.addListener("places_changed", function () {
+        localStorage.removeItem("polygon");
+        localStorage.removeItem("finalObject");
+        _finalObject = null;
+
         var places = searchBox.getPlaces();
 
         if (places.length == 0) {
@@ -156,7 +157,6 @@ export default {
 
       if (_finalObject && _finalObject.shape && _finalObject.shape.length > 0) {
         _finalObject.shape.map((shp) => {
-          console.log("shp => ", shp);
           for (var i = 0; i < shp.path.length; i++) {
             //  create a polyline
             var poly = new L.Polyline(shp.path[i], {
@@ -184,7 +184,6 @@ export default {
               attributes: { fill: "yellow" },
               // orientation: "70",
             });
-
             localStorage.setItem("finalObject", JSON.stringify(_finalObject));
           }
         });
@@ -192,8 +191,6 @@ export default {
     },
     handler: function handler(event) {
       localStorage.clear();
-      // localStorage.removeItem("latlng");
-      // localStorage.removeItem("polygon");
     },
     handleInput(e) {
       e.stopPropagation();

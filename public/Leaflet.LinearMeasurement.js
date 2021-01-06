@@ -596,7 +596,6 @@
             // ------------------- latlong for draw -------------
 
             var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [] }
-            console.log('finalObject linear => ', finalObject);
 
             var shapes = finalObject.shape || []
             // var totalArea = finalObject.shape.totalArea || 0
@@ -624,7 +623,7 @@
                     pl.map(p => {
                         if (!p.hasOwnProperty("color") && !p.hasOwnProperty("length") && !p.hasOwnProperty("isColorChanged") && !p.hasOwnProperty("label")) {
                             {
-                                p.color = "#1e0fff", p.length = `${0} m`, p.isColorChanged = false, p.label = null
+                                p.color = "Blue", p.length = `${0} m`, p.isColorChanged = false, p.label = "Unspecified"
                             }
                         }
                     })
