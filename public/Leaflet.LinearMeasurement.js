@@ -95,6 +95,7 @@
             me.tempPolygon = []
 
             this.clickEventFn = function (e) {
+
                 me.tempPolygon.push([e.latlng.lat, e.latlng.lng])
 
                 if (me.clickHandle) {

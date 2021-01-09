@@ -89,9 +89,7 @@ export default {
     initMap() {
       var vueInstance = this;
 
-      var _finalObject = JSON.parse(
-        JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
-      );
+      var _finalObject = JSON.parse(JSON.stringify(JSON.parse(localStorage.getItem("finalObject"))));
 
       this.zoom = localStorage.getItem("zoom") || 16;
 
