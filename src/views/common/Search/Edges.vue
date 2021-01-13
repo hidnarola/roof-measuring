@@ -89,7 +89,9 @@ export default {
     initMap() {
       var vueInstance = this;
 
-      var _finalObject = JSON.parse(JSON.stringify(JSON.parse(localStorage.getItem("finalObject"))));
+      var _finalObject = JSON.parse(
+        JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
+      );
 
       this.zoom = localStorage.getItem("zoom") || 16;
 
@@ -115,6 +117,9 @@ export default {
 
       L.marker([this.initLat, this.initLng]).addTo(this.map);
 
+      this.map.on("zoomend", function (e) {
+        localStorage.setItem("zoom", e.target._zoom);
+      });
       if (
         _finalObject &&
         _finalObject.shape != null &&
@@ -166,7 +171,10 @@ export default {
                   });
                 });
                 e.sourceTarget.setStyle({ color: vueInstance.selectedColor });
-                localStorage.setItem("finalObject", JSON.stringify(_finalObject));
+                localStorage.setItem(
+                  "finalObject",
+                  JSON.stringify(_finalObject)
+                );
               }
             });
 
