@@ -36,7 +36,7 @@ export default {
         JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
       );
 
-      this.zoom = JSON.parse(localStorage.getItem("zoom")) ||16;
+      this.zoom = JSON.parse(localStorage.getItem("zoom")) || 16;
       // this.zoom = 18;
 
       var initLatLng =
@@ -90,13 +90,16 @@ export default {
       areas &&
         areas.map((areaData, i) => {
           this.totalArea = this.totalArea + parseFloat(areaData);
-          _finalObject.shape[i].area = parseFloat(areaData);
+          if(!_finalObject.shape[i].areaChanged){
+            _finalObject.shape[i].area = parseFloat(areaData);
+          }
           _finalObject.shape[i].unit = areaData.split(" ").pop();
           _finalObject.totalArea = this.totalArea;
           _finalObject.unit = areaData.split(" ").pop();
         });
 
       // ----- polyline draw
+
       if (
         _finalObject &&
         _finalObject.shape != null &&
@@ -115,10 +118,12 @@ export default {
               opacity: 1,
             }).addTo(this.map);
 
-            var distance = L.latLng([
-              shp.path[i][0].lat,
-              shp.path[i][0].lng,
-            ]).distanceTo([shp.path[i][1].lat, shp.path[i][1].lng]);
+            if (shp.area === 0 && shp.areaChanged === true) {
+              poly.setText(`${shp.path[i][0].length}`, {
+                center: true,
+                attributes: { fill: "yellow" },
+              });
+            }
           }
         });
       }
@@ -196,7 +201,11 @@ export default {
           285,
           "Copyright © 2020 Roofmeasurement.com | All rights reserved."
         );
-        doc.text(doc.internal.pageSize.getWidth() - 40, 285, "page " + doc.page);
+        doc.text(
+          doc.internal.pageSize.getWidth() - 40,
+          285,
+          "page " + doc.page
+        );
         doc.page++;
       }
 
@@ -221,13 +230,15 @@ export default {
       let _printData = JSON.parse(JSON.stringify(this.finalObject));
 
       _printData.shape.map((latlng, i) => {
-        areaTable.push({
-          index: `Shape - ${i}`,
-          area: latlng.area + latlng.unit,
-          totalArea:
-            JSON.parse(JSON.stringify(this.finalObject)).totalArea +
-            JSON.parse(JSON.stringify(this.finalObject)).unit,
-        });
+        if (latlng.area != 0) {
+          areaTable.push({
+            index: `Shape - ${i}`,
+            area: latlng.area + latlng.unit,
+            totalArea:
+              JSON.parse(JSON.stringify(this.finalObject)).totalArea +
+              JSON.parse(JSON.stringify(this.finalObject)).unit,
+          });
+        }
       });
 
       Object.keys(_printData.measurement).map((key, index) => {
@@ -258,9 +269,8 @@ export default {
 
       // -------table data end -------------
 
-      // Before adding new content
-      // let y= 500; // Height position of new content
-      // doc.addPage();
+      // adding new content  header(); footer();
+
       header();
       footer();
       doc.setFontSize(20);
@@ -307,48 +317,73 @@ export default {
       doc.autoTable(areaCol, areaRows, { startY: 30 });
 
       _printData.shape.map((shp, i) => {
-        doc.addPage();
-        header();
-        footer();
-        doc.setFontSize(16);
-        doc.setTextColor("#259ad7");
-        doc.text(`Structure #${i} Summary`, 15, 20);
-        doc.setFontSize(14);
-        doc.setTextColor("Gray");
-        doc.text(`Measurement`, 20, 30);
-        doc.setFontSize(11);
-        doc.setTextColor("Gray");
-        doc.text(`Total Roof Facets ${ _printData.totalFacets / _printData.totalFacets } facets`, 20, 40);
+        if (shp.area != 0) {
+          doc.addPage();
+          header();
+          footer();
+          doc.setFontSize(16);
+          doc.setTextColor("#259ad7");
+          doc.text(`Structure #${i} Summary`, 15, 20);
+          doc.setFontSize(14);
+          doc.setTextColor("Gray");
+          doc.text(`Measurement`, 20, 30);
+          doc.setFontSize(11);
+          doc.setTextColor("Gray");
+          doc.text(
+            `Total Roof Facets ${
+              _printData.totalFacets / _printData.totalFacets
+            } facets`,
+            20,
+            40
+          );
 
-        let _EavesRakes = 0, _HipsRidges = 0, _lengthUnit, stayY;
-        Object.keys(shp.type).map((key, index) => {
-          doc.text(`Total ${shp.type[key].label} ${shp.type[key].length.toFixed(2)} ${shp.type[key].unit}`, 20, 50 + index * 10 );
-          stayY = 50 + index * 10;
-          switch (key) {
-            case "Hips":
-              _HipsRidges += shp.type["Hips"].length;
-              break;
-            case "Ridges":
-              _HipsRidges += shp.type["Ridges"].length;
-              break;
-            case "Eaves":
-              _EavesRakes += shp.type["Eaves"].length;
-              break;
-            case "Rakes":
-              _EavesRakes += shp.type["Rakes"].length;
-              break;
-            default:
-              break;
-          }
-          _lengthUnit =
-            shp.type[key] && shp.type[key].unit && shp.type[key].unit;
-        });
+          let _EavesRakes = 0,
+            _HipsRidges = 0,
+            _lengthUnit,
+            stayY;
+          Object.keys(shp.type).map((key, index) => {
+            doc.text(
+              `Total ${shp.type[key].label} ${shp.type[key].length.toFixed(
+                2
+              )} ${shp.type[key].unit}`,
+              20,
+              50 + index * 10
+            );
+            stayY = 50 + index * 10;
+            switch (key) {
+              case "Hips":
+                _HipsRidges += shp.type["Hips"].length;
+                break;
+              case "Ridges":
+                _HipsRidges += shp.type["Ridges"].length;
+                break;
+              case "Eaves":
+                _EavesRakes += shp.type["Eaves"].length;
+                break;
+              case "Rakes":
+                _EavesRakes += shp.type["Rakes"].length;
+                break;
+              default:
+                break;
+            }
+            _lengthUnit =
+              shp.type[key] && shp.type[key].unit && shp.type[key].unit;
+          });
 
-        doc.text(`Hips + Ridges ${_HipsRidges.toFixed(2)} ${_lengthUnit}`, 20, stayY + 10 );
+          doc.text(
+            `Hips + Ridges ${_HipsRidges.toFixed(2)} ${_lengthUnit}`,
+            20,
+            stayY + 10
+          );
 
-        doc.text(`Eaves + Rakes ${_EavesRakes.toFixed(2)} ${_lengthUnit}`, 20, stayY + 20 );
+          doc.text(
+            `Eaves + Rakes ${_EavesRakes.toFixed(2)} ${_lengthUnit}`,
+            20,
+            stayY + 20
+          );
 
-        doc.text(`Total Roof Area ${shp.area + shp.unit}`, 20, stayY + 30);
+          doc.text(`Total Roof Area ${shp.area + shp.unit}`, 20, stayY + 30);
+        }
       });
 
       doc.addPage();
@@ -358,6 +393,7 @@ export default {
       doc.setFontSize(16);
       doc.setTextColor("#259ad7");
       doc.text(`All Shape Structures Summary `, 15, 20);
+
       var point;
       for (var i = 0; i < this.polyData.length; i++) {
         context.beginPath();
@@ -387,7 +423,14 @@ export default {
         const marginX = (pageWidth - canvasWidth) / 2;
         const marginY = (pageHeight - canvasHeight) / 2;
 
-        doc.addImage(imgData, "PNG", marginX, marginY, canvasWidth, canvasHeight );
+        doc.addImage(
+          imgData,
+          "PNG",
+          marginX,
+          marginY,
+          canvasWidth,
+          canvasHeight
+        );
       }
       doc.addPage();
       header();
@@ -400,12 +443,25 @@ export default {
       doc.text(`Measurement`, 20, 30);
       doc.setFontSize(11);
       doc.setTextColor("Gray");
-      doc.text(`Total Roof Area ${_printData.totalArea} ${_printData.unit}`, 20, 40 );
+      doc.text(
+        `Total Roof Area ${_printData.totalArea} ${_printData.unit}`,
+        20,
+        40
+      );
       doc.text(`Total Roof Facets ${_printData.totalFacets} facets`, 20, 50);
-      let EavesRakes = 0, HipsRidges = 0, startY = 0, lengthUnit;
+      let EavesRakes = 0,
+        HipsRidges = 0,
+        startY = 0,
+        lengthUnit;
 
       Object.keys(_printData.measurement).map((key, index) => {
-        doc.text(`Total ${key} ${_printData.measurement[key].length.toFixed(2)} ${ _printData.measurement[key].unit }`, 20, 60 + index * 10);
+        doc.text(
+          `Total ${key} ${_printData.measurement[key].length.toFixed(2)} ${
+            _printData.measurement[key].unit
+          }`,
+          20,
+          60 + index * 10
+        );
 
         startY = 60 + index * 10;
         switch (key) {
@@ -430,11 +486,19 @@ export default {
           _printData.measurement[key].unit;
       });
 
-      doc.text(`Hips + Ridges ${HipsRidges.toFixed(2)} ${lengthUnit}`, 20, startY + 10 );
-      doc.text(`Eaves + Rakes ${EavesRakes.toFixed(2)} ${lengthUnit}`, 20, startY + 20 );
+      doc.text(
+        `Hips + Ridges ${HipsRidges.toFixed(2)} ${lengthUnit}`,
+        20,
+        startY + 10
+      );
+      doc.text(
+        `Eaves + Rakes ${EavesRakes.toFixed(2)} ${lengthUnit}`,
+        20,
+        startY + 20
+      );
       doc.save("map_report.pdf");
-      doc = new jsPDF();
-    }
+      // doc = new jsPDF();
+    },
   },
 };
 </script>

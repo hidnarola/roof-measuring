@@ -100,6 +100,10 @@ export default {
           localStorage.getItem("initLatLng") != undefined) &&
         JSON.parse(localStorage.getItem("initLatLng"));
 
+      let polyData = JSON.parse(
+        JSON.stringify(JSON.parse(localStorage.getItem("polygon")))
+      );
+
       this.initLat = (initLatLng && initLatLng.lat) || -41.2858;
       this.initLng = (initLatLng && initLatLng.lng) || 174.78682;
 
@@ -136,7 +140,6 @@ export default {
               lineCap: "round",
               weight: 3,
               opacity: 1,
-              // showMeasurements: true,
               // measurementOptions: { imperial: true },
             }).addTo(this.map);
 
@@ -152,6 +155,7 @@ export default {
               center: true,
               attributes: { fill: "yellow" },
             });
+
             poly.on("click", function (e) {
               if (vueInstance.enableColor) {
                 _finalObject.shape.map((poly, index) => {
@@ -189,6 +193,31 @@ export default {
                       pl[1].lng == e.sourceTarget._latlngs[1].lng
                     ) {
                       poly.path.splice(poly.path.indexOf(pl), 1);
+                      //start
+                      polyData.map((polyD, index) => {
+                        polyD.map((plData, i) => {
+                          if (
+                            plData[0] == e.sourceTarget._latlngs[0].lat &&
+                            plData[1] == e.sourceTarget._latlngs[0].lng
+                          ) {
+                            polyData.splice(index, 1);
+                            if (poly.area != 0) {
+                              try {
+                                var polygonTest = turf.polygon(polyData);
+                                var area = turf.area(polygonTest);
+                              } catch (err) {
+                                poly.area = 0;
+                                poly.areaChanged = true;
+                              }
+                            } else {
+                              poly.area = 0;
+                              poly.areaChanged = true;
+                            }
+                          }
+                        });
+                      });
+                      localStorage.setItem("polygon", JSON.stringify(polyData));
+                      //testing end
                     }
                     e.sourceTarget.remove(this.map);
                   });
@@ -197,6 +226,7 @@ export default {
                   "finalObject",
                   JSON.stringify(_finalObject)
                 );
+                localStorage.setItem("polygon", JSON.stringify(polyData));
               }
             });
             localStorage.setItem("finalObject", JSON.stringify(_finalObject));
@@ -216,7 +246,6 @@ export default {
       this.enableColor = false;
     },
     handleRemoveAll() {
-      console.log("Hii in handleRemoveAll");
       this.finalObject = null;
       localStorage.removeItem("finalObject");
       localStorage.removeItem("polygon");

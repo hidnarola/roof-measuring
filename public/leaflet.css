@@ -111,6 +111,8 @@
 
 .leaflet-pane {
 	z-index: 400;
+	/* added by ssi */
+	/* display: contents */
 }
 
 .leaflet-tile-pane {

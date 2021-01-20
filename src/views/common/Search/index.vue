@@ -83,11 +83,10 @@ export default {
           dashArrayOptions: [],
         })
       );
+
       $.get(
         "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=-41.2858&lon=174.78682",
         function (data) {
-          console.log("data => ", data);
-          // console.log(data.address.road);
           vueInstance.value = data.address.road;
           vueInstance.$store.commit("SELECTED_PLACE", data.address.road);
         }
@@ -128,19 +127,8 @@ export default {
 
         var group = L.featureGroup();
 
-        console.log("vueInstance.value ssi => ", vueInstance.value);
-
         places.forEach(function (place) {
           vueInstance.value = place.formatted_address;
-
-          console.log("vueInstance.value ssi inside => ", vueInstance.value);
-
-          // if (_finalObject && _finalObject.address) {
-          //   _finalObject.address = place.formatted_address;
-          // } else {
-          //   _finalObject.address = { ..._finalObject, address: place.formatted_address, };
-          // }
-          // console.log("_finalObject => ", _finalObject);
 
           localStorage.setItem("finalObject", JSON.stringify(_finalObject));
 

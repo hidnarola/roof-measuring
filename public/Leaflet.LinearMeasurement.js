@@ -600,7 +600,6 @@
 
             var shapes = finalObject.shape || []
             // var totalArea = finalObject.shape.totalArea || 0
-            // console.log('totalArea => ', totalArea);
 
             var tempArray = []
             var tmpo = JSON.parse(JSON.stringify(me.latlngsList))
@@ -612,7 +611,7 @@
                 finalObject.shape = shapes
                 // finalObject.totalArea = totalArea
             } else {
-                shapes.push({ path: tmpo, area: 0 })
+                shapes.push({ path: tmpo, area: 0 , areaChanged: false })
                 finalObject.shape = shapes
                 // finalObject.totalArea = totalArea
             }
@@ -630,6 +629,7 @@
                     })
                 })
             })
+
             localStorage.setItem("finalObject", JSON.stringify(finalObject))
 
             if (!this.total) {

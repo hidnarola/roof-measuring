@@ -13,27 +13,16 @@ const fullRoutes = [
 		}
 	},
 	// {
-	// 	path: '/map',
-	// 	name: 'search',
+	// 	path: '/geoman',
+	// 	name: 'geoman',
 	// 	components: {
-	// 		default: () => import('@/views/common/Search/index'),
+	// 		default: () => import('@/views/common/Search/Geoman'),
 	// 		tip: () => import('@/views/common/Search/tip')
+
 	// 	},
 	// 	meta: {
 	// 		icon: 'earth',
-	// 		sideName: 'Map'
-	// 	}
-	// },
-	// {
-	// 	path: '/edges',
-	// 	name: 'Edges',
-	// 	components: {
-	// 		default: () => import('@/views/common/Search/Map'),
-	// 		// tip: () => import('@/views/common/Search/tip')
-	// 	},
-	// 	meta: {
-	// 		icon: 'earth',
-	// 		sideName: 'Edges',
+	// 		sideName: 'Geoman'
 	// 	}
 	// },
 	error,
