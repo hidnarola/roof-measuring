@@ -209,9 +209,9 @@
             this._measurementOptions = L.extend({
                 showOnHover: (options && options.showOnHover) || false,
                 minPixelDistance: 30,
-                showDistances: true,
+                showDistances: false,
                 showArea: true,
-                showTotalDistance: true,
+                showTotalDistance: false,
                 lang: {
                     totalLength: 'Total length',
                     totalArea: 'Total area',

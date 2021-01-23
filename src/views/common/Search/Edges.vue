@@ -124,6 +124,7 @@ export default {
       this.map.on("zoomend", function (e) {
         localStorage.setItem("zoom", e.target._zoom);
       });
+
       if (
         _finalObject &&
         _finalObject.shape != null &&
@@ -175,10 +176,7 @@ export default {
                   });
                 });
                 e.sourceTarget.setStyle({ color: vueInstance.selectedColor });
-                localStorage.setItem(
-                  "finalObject",
-                  JSON.stringify(_finalObject)
-                );
+                localStorage.setItem("finalObject", JSON.stringify(_finalObject) );
               }
             });
 
@@ -192,30 +190,20 @@ export default {
                       pl[1].lat == e.sourceTarget._latlngs[1].lat &&
                       pl[1].lng == e.sourceTarget._latlngs[1].lng
                     ) {
-                      poly.path.splice(poly.path.indexOf(pl), 1);
+                      poly.path.splice(i, 1);
                       //start
-                      polyData.map((polyD, index) => {
-                        polyD.map((plData, i) => {
+                      polyData.map((polyD, ind) => {
+                        polyD.map((plData, j) => {
                           if (
-                            plData[0] == e.sourceTarget._latlngs[0].lat &&
-                            plData[1] == e.sourceTarget._latlngs[0].lng
+                            plData[0] == e.sourceTarget._latlngs[1].lat &&
+                            plData[1] == e.sourceTarget._latlngs[1].lng
                           ) {
-                            polyData.splice(index, 1);
-                            if (poly.area != 0) {
-                              try {
-                                var polygonTest = turf.polygon(polyData);
-                                var area = turf.area(polygonTest);
-                              } catch (err) {
-                                poly.area = 0;
-                                poly.areaChanged = true;
-                              }
-                            } else {
-                              poly.area = 0;
-                              poly.areaChanged = true;
-                            }
+                            polyData.splice(ind, 1);
+                            // poly.area = 0
                           }
                         });
                       });
+
                       localStorage.setItem("polygon", JSON.stringify(polyData));
                       //testing end
                     }
@@ -263,6 +251,7 @@ export default {
         this.isOpenModel = true;
       }
     },
+
   },
 };
 </script>

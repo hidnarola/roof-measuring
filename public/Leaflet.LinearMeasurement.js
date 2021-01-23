@@ -21,7 +21,6 @@
             link.title = 'Toggle measurement tool';
 
             L.DomEvent.on(link, 'click', L.DomEvent.stop).on(link, 'click', function () {
-
                 if (L.DomUtil.hasClass(link, 'icon-active')) {
                     // me.resetRuler(!!me.mainLayer);
                     // L.DomUtil.removeClass(link, 'icon-active');
@@ -95,9 +94,17 @@
             me.tempPolygon = []
 
             this.clickEventFn = function (e) {
-
                 me.tempPolygon.push([e.latlng.lat, e.latlng.lng])
-
+                let len = me.tempPolygon.length
+                if (len >= 2) {
+                    let last = me.tempPolygon[len - 1]
+                    let lastToSecond = me.tempPolygon[len - 2]
+                    if (last[0] === lastToSecond[0] && last[1] === lastToSecond[1]) {
+                        me.tempPolygon.pop()
+                    }
+                }
+                //ssi start
+                const polygon = JSON.parse(localStorage.getItem("polygon")) || []
                 if (me.clickHandle) {
                     clearTimeout(me.clickHandle);
                     me.clickHandle = 0;
@@ -109,13 +116,28 @@
                     me.getDblClickHandler(e, poly);
                 }
                 else {
+                    if (me.tempPolygon.length > 0) {
+                        for (var i = 0; i < me.tempPolygon.length; i++) {
+                            if (me.tempPolygon.length - 1 !== i) {
+                                let everyPoint = L.latLng(me.tempPolygon[i])
+                                let current = L.latLng(e.latlng)
+                                var dist = parseInt(everyPoint.distanceTo(current).toFixed(0))
+                                if (dist <= 5) {
+                                    //need to set frist and last point same before pushing the shape in polygon array
+                                    me.tempPolygon.pop()
+                                    me.tempPolygon.push(me.tempPolygon[0])
+                                    polygon.push(me.tempPolygon)
+                                }
+                            }
+                        }
+                        localStorage.setItem("polygon", JSON.stringify(polygon))
+                    }
                     me.preClick(e);
                     me.clickHandle = setTimeout(function () {
                         me.getMouseClickHandler(e);
                         // me.getDblClickHandler(e);
                         me.clickHandle = 0;
                     }, me.clickSpeed);
-
                 }
             };
 
@@ -392,7 +414,6 @@
         },
 
         renderPolyline: function (latLngs, dashArray, layer) {
-
             var poly = L.polyline(latLngs, {
                 color: this.options.color,
                 weight: 3,
@@ -400,7 +421,6 @@
                 dashArray: dashArray
             });
             poly.addTo(layer);
-
             return poly;
         },
 
@@ -448,7 +468,6 @@
         },
 
         preClick: function (e) {
-
             var me = this,
                 target = e.originalEvent.target;
 
@@ -509,7 +528,6 @@
                 var latLng = e.latlng;
 
                 this.latlngs = [this.prevLatlng, e.latlng];
-
 
                 if (!this.poly) {
                     this.poly = this.renderPolyline(this.latlngs, '5 5', this.layer);
@@ -588,12 +606,7 @@
             var azimut = '',
                 me = this;
 
-            const polygon = JSON.parse(localStorage.getItem("polygon")) || []
 
-            if (me.tempPolygon.length > 0) {
-                polygon.push(me.tempPolygon)
-                localStorage.setItem("polygon", JSON.stringify(polygon))
-            }
             // ------------------- latlong for draw -------------
 
             var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [] }
@@ -611,7 +624,7 @@
                 finalObject.shape = shapes
                 // finalObject.totalArea = totalArea
             } else {
-                shapes.push({ path: tmpo, area: 0 , areaChanged: false })
+                shapes.push({ path: tmpo, area: 0, areaChanged: false })
                 finalObject.shape = shapes
                 // finalObject.totalArea = totalArea
             }
@@ -629,9 +642,26 @@
                     })
                 })
             })
+            const polygon = JSON.parse(localStorage.getItem("polygon")) || []
 
+            //update the finalObject as per the polygon for complete shape
+            finalObject.shape.length > 0 && finalObject.shape.map((shape, shapeIndex) => {
+                shape.path.map((shapePath, shapePathIndex) => {
+                        polygon.map((polygonShape, polygonShapeIndex) => {
+                            polygonShape.map((polyPath, polyPathIndex) => {
+                                // condition to get shape
+                                if (shape.path[0][0].lat == polyPath[0] && shape.path[0][0].lng == polyPath[1]) {
+                                    // set the polygon points in path
+                                    if (polygonShape[polygonShape.length - 2][0] == shapePath[0].lat && polygonShape[polygonShape.length - 2][1] == shapePath[0].lng) {
+                                        shapePath[1].lat = polyPath[0]
+                                        shapePath[1].lng = polyPath[1]
+                                    }
+                                }
+                            })
+                        })
+                })
+            })
             localStorage.setItem("finalObject", JSON.stringify(finalObject))
-
             if (!this.total) {
                 return;
             }

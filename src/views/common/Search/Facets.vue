@@ -37,7 +37,6 @@ export default {
       );
 
       this.zoom = JSON.parse(localStorage.getItem("zoom")) || 16;
-      // this.zoom = 18;
 
       var initLatLng =
         (localStorage.getItem("initLatLng") != null ||
@@ -66,18 +65,24 @@ export default {
 
       this.polyData = JSON.parse(localStorage.getItem("polygon")) || [];
 
-      let polyStore =
-        this.polyData &&
-        this.polyData.map((shape) => {
-          var polygon = L.polygon([shape], {
-            showMeasurements: true,
-            // measurementOptions: { imperial: true },
-            color: "Blue",
-            dashArray: "5 5",
-            lineCap: "round",
-            weight: 0,
-            opacity: 0,
-          }).addTo(this.map);
+      // ----- polyline draw
+
+      this.polyData &&
+        this.polyData.map((shape, i) => {
+          if (
+            shape[0][0] == shape[shape.length - 1][0] &&
+            shape[0][1] == shape[shape.length - 1][1]
+          ) {
+            var polygon = L.polygon([shape], {
+              showMeasurements: true,
+              // measurementOptions: { imperial: true },
+              color: "Blue",
+              dashArray: "5 5",
+              lineCap: "round",
+              weight: 0,
+              opacity: 0,
+            }).addTo(this.map);
+          }
         });
       // setting out the area measurements
       let areas = [];
@@ -86,19 +91,14 @@ export default {
           areas.push(layer._measurement);
         }
       });
-
       areas &&
         areas.map((areaData, i) => {
           this.totalArea = this.totalArea + parseFloat(areaData);
-          if(!_finalObject.shape[i].areaChanged){
-            _finalObject.shape[i].area = parseFloat(areaData);
-          }
+          _finalObject.shape[i].area = parseFloat(areaData);
           _finalObject.shape[i].unit = areaData.split(" ").pop();
           _finalObject.totalArea = this.totalArea;
           _finalObject.unit = areaData.split(" ").pop();
         });
-
-      // ----- polyline draw
 
       if (
         _finalObject &&
@@ -118,12 +118,18 @@ export default {
               opacity: 1,
             }).addTo(this.map);
 
-            if (shp.area === 0 && shp.areaChanged === true) {
-              poly.setText(`${shp.path[i][0].length}`, {
-                center: true,
-                attributes: { fill: "yellow" },
-              });
-            }
+            var distance = L.latLng([
+              shp.path[i][0].lat,
+              shp.path[i][0].lng,
+            ]).distanceTo([shp.path[i][1].lat, shp.path[i][1].lng]);
+
+            shp.path[i][0]["length"] = `${distance.toFixed(1)} m`;
+            shp.path[i][1]["length"] = `${distance.toFixed(1)} m`;
+            poly.setText(`${shp.path[i][0].length}`, {
+              center: true,
+              attributes: { fill: "yellow" },
+            });
+            // }
           }
         });
       }
