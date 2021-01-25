@@ -134,6 +134,8 @@ export default {
           for (var i = 0; i < shp.path.length; i++) {
             //  create a polyline
             var poly = new L.Polyline(shp.path[i], {
+              // showMeasurements: true,
+              // showDistances: true,
               color: vueInstance.selectedColor
                 ? vueInstance.selectedColor
                 : shp.path[i][0].color,
@@ -176,7 +178,10 @@ export default {
                   });
                 });
                 e.sourceTarget.setStyle({ color: vueInstance.selectedColor });
-                localStorage.setItem("finalObject", JSON.stringify(_finalObject) );
+                localStorage.setItem(
+                  "finalObject",
+                  JSON.stringify(_finalObject)
+                );
               }
             });
 
@@ -191,7 +196,6 @@ export default {
                       pl[1].lng == e.sourceTarget._latlngs[1].lng
                     ) {
                       poly.path.splice(i, 1);
-                      //start
                       polyData.map((polyD, ind) => {
                         polyD.map((plData, j) => {
                           if (
@@ -199,11 +203,11 @@ export default {
                             plData[1] == e.sourceTarget._latlngs[1].lng
                           ) {
                             polyData.splice(ind, 1);
-                            // poly.area = 0
+                            _finalObject.totalArea = parseFloat((_finalObject.totalArea - _finalObject.shape[index].area).toFixed(2));
+                            _finalObject.shape[index].area = 0;
                           }
                         });
                       });
-
                       localStorage.setItem("polygon", JSON.stringify(polyData));
                       //testing end
                     }
@@ -251,7 +255,6 @@ export default {
         this.isOpenModel = true;
       }
     },
-
   },
 };
 </script>

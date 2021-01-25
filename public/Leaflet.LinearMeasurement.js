@@ -606,13 +606,11 @@
             var azimut = '',
                 me = this;
 
-
             // ------------------- latlong for draw -------------
 
-            var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [] }
+            var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [], totalArea: 0}
 
             var shapes = finalObject.shape || []
-            // var totalArea = finalObject.shape.totalArea || 0
 
             var tempArray = []
             var tmpo = JSON.parse(JSON.stringify(me.latlngsList))
@@ -624,7 +622,7 @@
                 finalObject.shape = shapes
                 // finalObject.totalArea = totalArea
             } else {
-                shapes.push({ path: tmpo, area: 0, areaChanged: false })
+                shapes.push({ path: tmpo, area: 0, unit: "m²" })
                 finalObject.shape = shapes
                 // finalObject.totalArea = totalArea
             }
@@ -647,18 +645,18 @@
             //update the finalObject as per the polygon for complete shape
             finalObject.shape.length > 0 && finalObject.shape.map((shape, shapeIndex) => {
                 shape.path.map((shapePath, shapePathIndex) => {
-                        polygon.map((polygonShape, polygonShapeIndex) => {
-                            polygonShape.map((polyPath, polyPathIndex) => {
-                                // condition to get shape
-                                if (shape.path[0][0].lat == polyPath[0] && shape.path[0][0].lng == polyPath[1]) {
-                                    // set the polygon points in path
-                                    if (polygonShape[polygonShape.length - 2][0] == shapePath[0].lat && polygonShape[polygonShape.length - 2][1] == shapePath[0].lng) {
-                                        shapePath[1].lat = polyPath[0]
-                                        shapePath[1].lng = polyPath[1]
-                                    }
+                    polygon.map((polygonShape, polygonShapeIndex) => {
+                        polygonShape.map((polyPath, polyPathIndex) => {
+                            // condition to get shape
+                            if (shape.path[0][0].lat == polyPath[0] && shape.path[0][0].lng == polyPath[1]) {
+                                // set the polygon points in path
+                                if (polygonShape[polygonShape.length - 2][0] == shapePath[0].lat && polygonShape[polygonShape.length - 2][1] == shapePath[0].lng) {
+                                    shapePath[1].lat = polyPath[0]
+                                    shapePath[1].lng = polyPath[1]
                                 }
-                            })
+                            }
                         })
+                    })
                 })
             })
             localStorage.setItem("finalObject", JSON.stringify(finalObject))

@@ -22,7 +22,8 @@ export default {
       zoom: 16,
       imgElement: null,
       polyData: [],
-      totalArea: null,
+      totalArea: 0,
+      area: 0,
     };
   },
   mounted() {
@@ -81,24 +82,41 @@ export default {
               lineCap: "round",
               weight: 0,
               opacity: 0,
+              // showDistances: false
             }).addTo(this.map);
           }
         });
       // setting out the area measurements
-      let areas = [];
       this.map.eachLayer(function (layer) {
-        if (layer._title == "Total area") {
-          areas.push(layer._measurement);
+        if (layer._latlngs) {
+          _finalObject.shape &&
+            _finalObject.shape.map((shapes, i) => {
+              shapes.path.map((pathPoint, j) => {
+                layer._latlngs &&
+                  layer._latlngs[0].map((_latlng) => {
+                    if (
+                      pathPoint[0].lat == _latlng.lat &&
+                      pathPoint[0].lng == _latlng.lng
+                    ) {
+                      _finalObject.shape[i].area = parseFloat(
+                        L.GeometryUtil.geodesicArea(layer._latlngs[0]).toFixed(
+                          2
+                        )
+                      );
+                      _finalObject.shape[i].unit = "m²";
+                    }
+                  });
+              });
+            });
         }
       });
-      areas &&
-        areas.map((areaData, i) => {
-          this.totalArea = this.totalArea + parseFloat(areaData);
-          _finalObject.shape[i].area = parseFloat(areaData);
-          _finalObject.shape[i].unit = areaData.split(" ").pop();
-          _finalObject.totalArea = this.totalArea;
-          _finalObject.unit = areaData.split(" ").pop();
+      var totalArea = 0;
+      _finalObject.shape &&
+        _finalObject.shape.map((shapes, i) => {
+          totalArea += shapes.area;
         });
+      _finalObject.totalArea = parseFloat((totalArea).toFixed(2));
+      _finalObject.unit = "m²";
 
       if (
         _finalObject &&
@@ -129,7 +147,6 @@ export default {
               center: true,
               attributes: { fill: "yellow" },
             });
-            // }
           }
         });
       }
