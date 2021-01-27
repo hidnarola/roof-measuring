@@ -241,10 +241,7 @@ export default {
                       delete shp.type[path[0].label];
                     }
                   }
-                  if (
-                    _finalObject.measurement &&
-                    _finalObject.measurement.hasOwnProperty(path[0].label)
-                  ) {
+                  if ( _finalObject.measurement && _finalObject.measurement.hasOwnProperty(path[0].label)) {
                     _finalObject.measurement[path[0].label].length -= len;
                     if (_finalObject.measurement[path[0].label].length <= 0) {
                       delete _finalObject.measurement[path[0].label];
@@ -261,7 +258,6 @@ export default {
           });
         });
       }
-      localStorage.setItem("finalObject", JSON.stringify(_finalObject));
       this.finalObject = _finalObject;
     },
     handleColor(color, label) {

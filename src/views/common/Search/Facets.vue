@@ -149,10 +149,8 @@ export default {
           }
         });
       }
-      // _finalObject.totalFacets = this.polyData.length;
       this.finalObject = _finalObject;
       localStorage.setItem("finalObject", JSON.stringify(_finalObject));
-
       // ------ polyline end
     },
     async createMapImage() {
@@ -261,17 +259,9 @@ export default {
       doc.text(10, 20, "Roof Report");
       doc.setFontSize(12);
       doc.setTextColor("Gray");
-      doc.text(
-        this.$store.state.map.place ? this.$store.state.map.place : "",
-        20,
-        30
-      );
+      doc.text( this.$store.state.map.place ? this.$store.state.map.place : "", 20, 30 );
       doc.text(`${_printData.totalFacets} Facets`, 20, 40);
-      doc.text(
-        `Total Facet Area : ${_printData.totalArea} ${_printData.unit}`,
-        20,
-        50
-      );
+      doc.text( `Total Facet Area : ${_printData.totalArea} ${_printData.unit}`, 20, 50 );
 
       doc.addImage(this.imgElement, "PNG", 20, 60, 170, 150);
       // ---------------Length Measurement Report--------------------
@@ -284,9 +274,7 @@ export default {
 
       doc.setFontSize(12);
       doc.setTextColor("gray");
-      doc.autoTable(edgesCol, edgesRows, {
-        startY: 30,
-      });
+      doc.autoTable(edgesCol, edgesRows, { startY: 30, });
       // -------------Area Measurement Report---------
       doc.addPage();
       header();
@@ -312,26 +300,11 @@ export default {
           doc.text(`Measurement`, 20, 30);
           doc.setFontSize(11);
           doc.setTextColor("Gray");
-          doc.text(
-            `Total Roof Facets ${
-              _printData.totalFacets / _printData.totalFacets
-            } facets`,
-            20,
-            40
-          );
+          doc.text(`Total Roof Facets ${ _printData.totalFacets / _printData.totalFacets } facets`, 20, 40);
 
-          let _EavesRakes = 0,
-            _HipsRidges = 0,
-            _lengthUnit,
-            stayY;
+          let _EavesRakes = 0, _HipsRidges = 0, _lengthUnit, stayY;
           Object.keys(shp.type).map((key, index) => {
-            doc.text(
-              `Total ${shp.type[key].label} ${shp.type[key].length.toFixed(
-                2
-              )} ${shp.type[key].unit}`,
-              20,
-              50 + index * 10
-            );
+            doc.text(`Total ${shp.type[key].label} ${shp.type[key].length.toFixed( 2 )} ${shp.type[key].unit}`, 20, 50 + index * 10 );
             stayY = 50 + index * 10;
             switch (key) {
               case "Hips":
@@ -349,20 +322,11 @@ export default {
               default:
                 break;
             }
-            _lengthUnit =
-              shp.type[key] && shp.type[key].unit && shp.type[key].unit;
+            _lengthUnit = shp.type[key] && shp.type[key].unit && shp.type[key].unit;
           });
 
-          doc.text(
-            `Hips + Ridges ${_HipsRidges.toFixed(2)} ${_lengthUnit}`,
-            20,
-            stayY + 10
-          );
-          doc.text(
-            `Eaves + Rakes ${_EavesRakes.toFixed(2)} ${_lengthUnit}`,
-            20,
-            stayY + 20
-          );
+          doc.text( `Hips + Ridges ${_HipsRidges.toFixed(2)} ${_lengthUnit}`, 20, stayY + 10 );
+          doc.text( `Eaves + Rakes ${_EavesRakes.toFixed(2)} ${_lengthUnit}`, 20, stayY + 20 );
           doc.text(`Total Roof Area ${shp.area + shp.unit}`, 20, stayY + 30);
         }
       });
@@ -404,14 +368,7 @@ export default {
         const marginX = (pageWidth - canvasWidth) / 2;
         const marginY = (pageHeight - canvasHeight) / 2;
 
-        doc.addImage(
-          imgData,
-          "PNG",
-          marginX,
-          marginY,
-          canvasWidth,
-          canvasHeight
-        );
+        doc.addImage( imgData, "PNG", marginX, marginY, canvasWidth, canvasHeight );
       }
       // -----------All Structures Summary----------
       doc.addPage();
@@ -425,25 +382,12 @@ export default {
       doc.text(`Measurement`, 20, 30);
       doc.setFontSize(11);
       doc.setTextColor("Gray");
-      doc.text(
-        `Total Roof Area ${_printData.totalArea} ${_printData.unit}`,
-        20,
-        40
-      );
+      doc.text( `Total Roof Area ${_printData.totalArea} ${_printData.unit}`, 20, 40 );
       doc.text(`Total Roof Facets ${_printData.totalFacets} facets`, 20, 50);
-      let EavesRakes = 0,
-        HipsRidges = 0,
-        startY = 0,
-        lengthUnit;
+      let EavesRakes = 0, HipsRidges = 0, startY = 0, lengthUnit;
 
       Object.keys(_printData.measurement).map((key, index) => {
-        doc.text(
-          `Total ${key} ${_printData.measurement[key].length.toFixed(2)} ${
-            _printData.measurement[key].unit
-          }`,
-          20,
-          60 + index * 10
-        );
+        doc.text( `Total ${key} ${_printData.measurement[key].length.toFixed(2)} ${ _printData.measurement[key].unit }`, 20, 60 + index * 10 );
 
         startY = 60 + index * 10;
         switch (key) {
@@ -462,22 +406,11 @@ export default {
           default:
             break;
         }
-        lengthUnit =
-          _printData.measurement[key] &&
-          _printData.measurement[key].unit &&
-          _printData.measurement[key].unit;
+        lengthUnit = _printData.measurement[key] && _printData.measurement[key].unit && _printData.measurement[key].unit;
       });
 
-      doc.text(
-        `Hips + Ridges ${HipsRidges.toFixed(2)} ${lengthUnit}`,
-        20,
-        startY + 10
-      );
-      doc.text(
-        `Eaves + Rakes ${EavesRakes.toFixed(2)} ${lengthUnit}`,
-        20,
-        startY + 20
-      );
+      doc.text(`Hips + Ridges ${HipsRidges.toFixed(2)} ${lengthUnit}`, 20, startY + 10 );
+      doc.text(`Eaves + Rakes ${EavesRakes.toFixed(2)} ${lengthUnit}`, 20, startY + 20 );
       doc.save("map_report.pdf");
       // doc = new jsPDF();
     },
