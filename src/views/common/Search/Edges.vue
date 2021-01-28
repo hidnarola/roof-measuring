@@ -115,8 +115,8 @@ export default {
       });
 
       if ( _finalObject && _finalObject.shape != null && _finalObject.shape.length > 0 ) {
-        _finalObject.shape.map((shp, index) => {
-          shp.path.map((path, i) => {
+        _finalObject.shape.map((shp, shpIndex) => {
+          shp.path.map((path, pathIndex) => {
             //  create a polyline
             var poly = new L.Polyline(path, {
               // showMeasurements: true,
@@ -145,7 +145,7 @@ export default {
                 vueInstance.colorPolyline(shp, path, e, _finalObject);
               } else if (vueInstance.enableDelete) {
                 // Delete line code
-                vueInstance.deletePolyline(shp, i, index, path, e, _finalObject);
+                vueInstance.deletePolyline(shp, pathIndex, shpIndex, path, e, _finalObject);
               }
             });
             _finalObject.totalFacets = this.polyData.length;
@@ -155,20 +155,20 @@ export default {
         });
       }
     },
-    deletePolyline(shp, i, index, path, e, _finalObject) {
+    deletePolyline(shp, pathIndex, shpIndex, path, e, _finalObject) {
       if (
         path[0].lat == e.sourceTarget._latlngs[0].lat &&
         path[0].lng == e.sourceTarget._latlngs[0].lng &&
         path[1].lat == e.sourceTarget._latlngs[1].lat &&
         path[1].lng == e.sourceTarget._latlngs[1].lng
       ) {
-        shp.path.splice(i, 1);
+        shp.path.splice(pathIndex, 1);
         this.polyData.map((polyD, ind) => {
           polyD.map((plData, j) => {
             if ( plData[0] == e.sourceTarget._latlngs[1].lat && plData[1] == e.sourceTarget._latlngs[1].lng ) {
               this.polyData.splice(ind, 1);
-              _finalObject.totalArea = parseFloat((_finalObject.totalArea - _finalObject.shape[index].area ).toFixed(2));
-              _finalObject.shape[index].area = 0;
+              _finalObject.totalArea = parseFloat((_finalObject.totalArea - _finalObject.shape[shpIndex].area ).toFixed(2));
+              _finalObject.shape[shpIndex].area = 0;
             }
           });
         });
