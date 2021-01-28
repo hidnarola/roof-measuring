@@ -1,6 +1,6 @@
 <template>
   <div>
-    <input name="search" id="searchBox" placeholder="Search place" @click.prevent="handleInput" @keyup="value = $event.target.value" @value="value" />
+    <input name="search" id="searchBox" placeholder="Search place" @click.prevent="handleInput" />
     <div id="map"></div>
   </div>
 </template>
@@ -12,7 +12,7 @@ export default {
   data() {
     return {
       map: null,
-      value: "Wellington to Seatoun Passenger Ferry, Wellington Central",
+      value: "",
     };
   },
   mounted() {
@@ -31,10 +31,18 @@ export default {
         JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
       );
       //Load map
-      this.map = L.map("map").setView([ initLatLng != null ? initLatLng.lat : -41.2858, initLatLng != null ? initLatLng.lng : 174.78682], zoom ? zoom : 16);
+      this.map = L.map("map").setView(
+        [
+          initLatLng != null ? initLatLng.lat : -41.2858,
+          initLatLng != null ? initLatLng.lng : 174.78682,
+        ],
+        zoom ? zoom : 16
+      );
 
       L.tileLayer(
-        "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 20, maxNativeZoom: 19 }).addTo(this.map);
+        "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        { maxZoom: 20, maxNativeZoom: 19 }
+      ).addTo(this.map);
 
       delete L.Icon.Default.prototype._getIconUrl;
 
@@ -44,7 +52,10 @@ export default {
         shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
       });
 
-      L.marker([initLatLng != null ? initLatLng.lat : -41.2858, initLatLng != null ? initLatLng.lng : 174.78682]).addTo(this.map);
+      L.marker([
+        initLatLng != null ? initLatLng.lat : -41.2858,
+        initLatLng != null ? initLatLng.lng : 174.78682,
+      ]).addTo(this.map);
 
       var Ruler = L.Control.LinearMeasurement.extend({
         // layerSelected: function (e) {
@@ -61,8 +72,10 @@ export default {
         })
       );
 
+      //to get address of current latlng
       $.get(
-        "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=-41.2858&lon=174.78682", (data) =>{
+        "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=-41.2858&lon=174.78682",
+        (data) => {
           vueInstance.value = data.address.road;
           vueInstance.$store.commit("SELECTED_PLACE", data.address.road);
         }
@@ -105,13 +118,10 @@ export default {
 
         places.forEach(function (place) {
           vueInstance.value = place.formatted_address;
-
-          localStorage.setItem("finalObject", JSON.stringify(_finalObject));
-
           vueInstance.$store.commit("SELECTED_PLACE", place.formatted_address);
 
           setTimeout(() => {
-            localStorage.setItem( "initLatLng", JSON.stringify(place.geometry.location) );
+            localStorage.setItem( "initLatLng", JSON.stringify(place.geometry.location));
           }, 100);
 
           delete L.Icon.Default.prototype._getIconUrl;
@@ -132,10 +142,9 @@ export default {
         group.addTo(_this.map);
         _this.map.fitBounds(group.getBounds());
       });
-
       this.map.on("zoomend", function (e) {
         localStorage.setItem("zoom", e.target._zoom);
-        localStorage.setItem("initLatLng", JSON.stringify(e.sourceTarget._animateToCenter) );
+        localStorage.setItem( "initLatLng", JSON.stringify(e.sourceTarget._animateToCenter) );
       });
 
       if (_finalObject && _finalObject.shape && _finalObject.shape.length > 0) {
@@ -143,7 +152,9 @@ export default {
           for (var i = 0; i < shp.path.length; i++) {
             //  create a polyline
             var poly = new L.Polyline(shp.path[i], {
-              color: vueInstance.selectedColor ? vueInstance.selectedColor : shp.path[i][0].color,
+              color: vueInstance.selectedColor
+                ? vueInstance.selectedColor
+                : shp.path[i][0].color,
               dashArray: "5 5",
               lineCap: "round",
               weight: 3,
@@ -169,7 +180,7 @@ export default {
         });
       }
     },
-    handler: function handler(event) {
+    handler(event) {
       localStorage.clear();
     },
     handleInput(e) {

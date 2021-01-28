@@ -75,6 +75,7 @@ export default {
       initLat: -41.2858,
       initLng: 174.78682,
       zoom: 16,
+      polyData: [],
     };
   },
   mounted() {
@@ -83,19 +84,14 @@ export default {
   methods: {
     initMap() {
       var vueInstance = this;
-
-      var _finalObject = JSON.parse(
-        JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
-      );
-
+      var _finalObject = JSON.parse( JSON.stringify(JSON.parse(localStorage.getItem("finalObject"))));
       this.zoom = localStorage.getItem("zoom") || 16;
 
       var initLatLng =
-        (localStorage.getItem("initLatLng") != null ||
-          localStorage.getItem("initLatLng") != undefined) &&
+        (localStorage.getItem("initLatLng") != null || localStorage.getItem("initLatLng") != undefined) &&
         JSON.parse(localStorage.getItem("initLatLng"));
 
-      let polyData = JSON.parse(
+      this.polyData = JSON.parse(
         JSON.stringify(JSON.parse(localStorage.getItem("polygon")))
       );
 
@@ -109,9 +105,7 @@ export default {
         zoomAnimation: false,
       }).setView([this.initLat, this.initLng], this.zoom);
 
-      L.tileLayer(
-        "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        { maxZoom: 20, maxNativeZoom: 19 }
+      L.tileLayer( "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 20, maxNativeZoom: 19 }
       ).addTo(this.map);
 
       L.marker([this.initLat, this.initLng]).addTo(this.map);
@@ -120,11 +114,7 @@ export default {
         localStorage.setItem("zoom", e.target._zoom);
       });
 
-      if (
-        _finalObject &&
-        _finalObject.shape != null &&
-        _finalObject.shape.length > 0
-      ) {
+      if ( _finalObject && _finalObject.shape != null && _finalObject.shape.length > 0 ) {
         _finalObject.shape.map((shp, index) => {
           shp.path.map((path, i) => {
             //  create a polyline
@@ -140,10 +130,7 @@ export default {
               // measurementOptions: { imperial: true },
             }).addTo(this.map);
 
-            var distance = L.latLng([path[0].lat, path[0].lng]).distanceTo([
-              path[1].lat,
-              path[1].lng,
-            ]);
+            var distance = L.latLng([path[0].lat, path[0].lng]) .distanceTo([ path[1].lat, path[1].lng, ]);
 
             path[0]["length"] = `${distance.toFixed(1)} m`;
             path[1]["length"] = `${distance.toFixed(1)} m`;
@@ -152,113 +139,108 @@ export default {
               center: true,
               attributes: { fill: "yellow" },
             });
-            //Color change
             poly.on("click", function (e) {
               if (vueInstance.enableColor) {
-                if (
-                  path[0].lat === e.sourceTarget._latlngs[0].lat &&
-                  path[0].lng === e.sourceTarget._latlngs[0].lng &&
-                  path[1].lat === e.sourceTarget._latlngs[1].lat &&
-                  path[1].lng === e.sourceTarget._latlngs[1].lng
-                ) {
-                  path.map((p) => {
-                    p.color = vueInstance.selectedColor;
-                    p.isColorChanged = true;
-                    p.label = vueInstance.selectedLabel;
-                  });
-                }
-                let unit = path[0].length.split(" ").pop();
-                let length = parseFloat(path[0].length.split(" ")[0]);
-
-                var type = shp.type || null;
-                if (type && type[path[0].label] != undefined) {
-                  type[path[0].label].length += length;
-                } else {
-                  type = {
-                    ...type,
-                    [path[0].label]: {
-                      length: length,
-                      label: path[0].label,
-                      color: path[0].color,
-                      unit,
-                    },
-                  };
-                  shp.type = type;
-                }
-
-                let _length = parseFloat(path[0].length.split(" ", 1).pop());
-                let _unit = path[0].length.split(" ").pop();
-                if (_finalObject.measurement && _finalObject.measurement[path[0].label]) {
-                  _finalObject.measurement[path[0].label].length += _length;
-                } else {
-                  _finalObject.measurement = {
-                    ..._finalObject.measurement,
-                    [path[0].label]: {
-                      label: path[0].label,
-                      color: path[0].color,
-                      length: _length,
-                      unit: _unit,
-                    },
-                  };
-                }
-                e.sourceTarget.setStyle({ color: vueInstance.selectedColor });
-                //updatated colored line length
-              }
-              localStorage.setItem("finalObject", JSON.stringify(_finalObject));
-            });
-            poly.on("click", function (e) {
-              if (vueInstance.enableDelete) {
-                // Delete line code with update FinalObject and polygon
-                if (
-                  path[0].lat == e.sourceTarget._latlngs[0].lat &&
-                  path[0].lng == e.sourceTarget._latlngs[0].lng &&
-                  path[1].lat == e.sourceTarget._latlngs[1].lat &&
-                  path[1].lng == e.sourceTarget._latlngs[1].lng
-                ) {
-                  shp.path.splice(i, 1);
-                  polyData.map((polyD, ind) => {
-                    polyD.map((plData, j) => {
-                      if (
-                        plData[0] == e.sourceTarget._latlngs[1].lat &&
-                        plData[1] == e.sourceTarget._latlngs[1].lng
-                      ) {
-                        polyData.splice(ind, 1);
-                        _finalObject.totalArea = parseFloat(
-                          (
-                            _finalObject.totalArea -
-                            _finalObject.shape[index].area
-                          ).toFixed(2)
-                        );
-                        _finalObject.shape[index].area = 0;
-                      }
-                    });
-                  });
-                  let len = parseFloat(path[0].length.split(" ")[0])
-
-                  if (shp.type && shp.type.hasOwnProperty(path[0].label)) {
-                    shp.type[path[0].label].length -= len;
-                    if (shp.type[path[0].label].length <= 0) {
-                      delete shp.type[path[0].label];
-                    }
-                  }
-                  if ( _finalObject.measurement && _finalObject.measurement.hasOwnProperty(path[0].label)) {
-                    _finalObject.measurement[path[0].label].length -= len;
-                    if (_finalObject.measurement[path[0].label].length <= 0) {
-                      delete _finalObject.measurement[path[0].label];
-                    }
-                  }
-                  _finalObject.totalFacets = polyData.length;
-                  localStorage.setItem("polygon", JSON.stringify(polyData));
-                }
-                e.sourceTarget.remove(this.map);
-                localStorage.setItem("finalObject", JSON.stringify(_finalObject));
+                //Color change cod
+                vueInstance.colorPolyline(shp, path, e, _finalObject);
+              } else if (vueInstance.enableDelete) {
+                // Delete line code
+                vueInstance.deletePolyline(shp, i, index, path, e, _finalObject);
               }
             });
+            _finalObject.totalFacets = this.polyData.length;
+            this.finalObject = _finalObject;
             localStorage.setItem("finalObject", JSON.stringify(_finalObject));
           });
         });
       }
-      this.finalObject = _finalObject;
+    },
+    deletePolyline(shp, i, index, path, e, _finalObject) {
+      if (
+        path[0].lat == e.sourceTarget._latlngs[0].lat &&
+        path[0].lng == e.sourceTarget._latlngs[0].lng &&
+        path[1].lat == e.sourceTarget._latlngs[1].lat &&
+        path[1].lng == e.sourceTarget._latlngs[1].lng
+      ) {
+        shp.path.splice(i, 1);
+        this.polyData.map((polyD, ind) => {
+          polyD.map((plData, j) => {
+            if ( plData[0] == e.sourceTarget._latlngs[1].lat && plData[1] == e.sourceTarget._latlngs[1].lng ) {
+              this.polyData.splice(ind, 1);
+              _finalObject.totalArea = parseFloat((_finalObject.totalArea - _finalObject.shape[index].area ).toFixed(2));
+              _finalObject.shape[index].area = 0;
+            }
+          });
+        });
+        let len = parseFloat(path[0].length.split(" ")[0]);
+        if (shp.type && shp.type.hasOwnProperty(path[0].label)) {
+          shp.type[path[0].label].length -= len;
+          if (shp.type[path[0].label].length <= 0) {
+            delete shp.type[path[0].label];
+          }
+        }
+        if ( _finalObject.measurement && _finalObject.measurement.hasOwnProperty(path[0].label) ) {
+          _finalObject.measurement[path[0].label].length -= len;
+          if (_finalObject.measurement[path[0].label].length <= 0) {
+            delete _finalObject.measurement[path[0].label];
+          }
+        }
+      }
+      e.sourceTarget.remove(this.map);
+      localStorage.setItem("polygon", JSON.stringify(this.polyData));
+      _finalObject.totalFacets = this.polyData.length;
+      localStorage.setItem("finalObject", JSON.stringify(_finalObject));
+    },
+    colorPolyline(shp, path, e, _finalObject) {
+      if (
+        path[0].lat === e.sourceTarget._latlngs[0].lat &&
+        path[0].lng === e.sourceTarget._latlngs[0].lng &&
+        path[1].lat === e.sourceTarget._latlngs[1].lat &&
+        path[1].lng === e.sourceTarget._latlngs[1].lng
+      ) {
+        path.map((p) => {
+          p.color = this.selectedColor;
+          p.isColorChanged = true;
+          p.label = this.selectedLabel;
+        });
+      }
+      let unit = path[0].length.split(" ").pop();
+      let length = parseFloat(path[0].length.split(" ")[0]);
+
+      var type = shp.type || null;
+      if (type && type[path[0].label] != undefined) {
+        type[path[0].label].length += length;
+      } else {
+        type = {
+          ...type,
+          [path[0].label]: {
+            length: length,
+            label: path[0].label,
+            color: path[0].color,
+            unit,
+          },
+        };
+        shp.type = type;
+      }
+
+      let _length = parseFloat(path[0].length.split(" ", 1).pop());
+      let _unit = path[0].length.split(" ").pop();
+      //measurement update
+      if (_finalObject.measurement && _finalObject.measurement[path[0].label]) {
+        _finalObject.measurement[path[0].label].length += _length;
+      } else {
+        _finalObject.measurement = {
+          ..._finalObject.measurement,
+          [path[0].label]: {
+            label: path[0].label,
+            color: path[0].color,
+            length: _length,
+            unit: _unit,
+          },
+        };
+      }
+      e.sourceTarget.setStyle({ color: this.selectedColor });
+      localStorage.setItem("finalObject", JSON.stringify(_finalObject));
     },
     handleColor(color, label) {
       this.enableColor = true;

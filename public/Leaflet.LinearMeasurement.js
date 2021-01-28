@@ -16,22 +16,26 @@
                 link = L.DomUtil.create('a', 'icon-ruler', container),
                 map_container = map.getContainer(),
                 me = this;
+            // link.id="testing"
 
             link.href = '#';
             link.title = 'Toggle measurement tool';
 
             L.DomEvent.on(link, 'click', L.DomEvent.stop).on(link, 'click', function () {
+                // console.log('Click on pencil');
                 if (L.DomUtil.hasClass(link, 'icon-active')) {
+                    // console.log('Click on pencil in if');
                     // me.resetRuler(!!me.mainLayer);
                     // L.DomUtil.removeClass(link, 'icon-active');
                     // L.DomUtil.removeClass(map_container, 'ruler-map');
+                    // document.getElementById("testing").disabled = true;
                 } else {
+                    // console.log('Click on pencil in else');
                     me.initRuler();
                     L.DomUtil.addClass(link, 'icon-active');
                     L.DomUtil.addClass(map_container, 'ruler-map');
                 }
             });
-
             function contrastingColor(color) {
                 return (luma(color) >= 165) ? '000' : 'fff';
             }
@@ -487,10 +491,14 @@
         },
 
         getMouseClickHandler: function (e) {
-
+            // console.log('e.latlng in click => ', e.latlng);
             var me = this;
             me.fixedLast = me.last;
             me.sum = 0;
+            // console.log('me.poly => ', me.poly);
+            // console.log('me.latlngsList in clcik => ', me.latlngsList);
+            //test case
+            // me.latlngsList.push(me.latlngs);
 
             if (me.poly) {
                 me.latlngsList.push(me.latlngs);
@@ -506,7 +514,6 @@
             for (var l in me.latlngsList) {
                 o = me.latlngsList[l];
                 me.sum = o[0].distanceTo(o[1]) / me.UNIT_CONV;
-                // me.sum += o[0].distanceTo(o[1]) / me.UNIT_CONV;
             }
 
             if (me.measure.unit === this.SUB_UNIT) {
@@ -605,28 +612,28 @@
         getDblClickHandler: function (e, poly = []) {
             var azimut = '',
                 me = this;
-
-            // ------------------- latlong for draw -------------
-
-            var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [], totalArea: 0}
+            // ------------------- latlong for draw ------------
+            var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [], totalArea: 0 }
 
             var shapes = finalObject.shape || []
+            // console.log('me.latlngsList => ', me.latlngsList);
 
             var tempArray = []
             var tmpo = JSON.parse(JSON.stringify(me.latlngsList))
-
+            // console.log('(tmpo)[tmpo.length - 1][1] => ', (tmpo)[tmpo.length - 1] && (tmpo)[tmpo.length - 1][1]);
+            // console.log('e.latlng => ', e.latlng);
+            // console.log('tmpo => ', tmpo);
+            // if ((tmpo)[tmpo.length - 1]) {
             tempArray.push((tmpo)[tmpo.length - 1][1], JSON.parse(JSON.stringify(e.latlng)))
             tmpo.push(tempArray)
+            // }
 
             if (finalObject && finalObject.shape.length < 0) {
                 finalObject.shape = shapes
-                // finalObject.totalArea = totalArea
             } else {
                 shapes.push({ path: tmpo, area: 0, unit: "m²" })
                 finalObject.shape = shapes
-                // finalObject.totalArea = totalArea
             }
-
             // ------------------------final
 
             finalObject.shape.map(poly => {
@@ -694,8 +701,26 @@
 
             var fireSelected = function (e) {
                 if (L.DomUtil.hasClass(e.originalEvent.target, 'close')) {
-                    me.mainLayer.removeLayer(workspace);
-                    localStorage.removeItem("finalObject")
+                    // ssi
+                    // console.log('finalObject.shape => ', finalObject.shape, finalObject.shape.length - 1);
+                    // console.log(' => ', finalObject.shape.indexOf(finalObject.shape[finalObject.shape.length - 1]));
+
+                    // finalObject.shape.splice(finalObject.shape.length - 1, 1)
+                    // for (let index = 0; index < finalObject.shape.length; index++) {
+                    //     me.mainLayer.eachLayer(layer => {
+                    //         Object.keys(layer._layers).map(lyr => {
+                    //             if (layer._layers[lyr]._latlng && finalObject.shape[index].path) {
+                    //                 if (finalObject.shape[index].path[0][0].lat == layer._layers[lyr]._latlng.lat) {
+                                        me.mainLayer.removeLayer(workspace);
+                    //                     // finalObject.shape.splice(index, 1)
+                    //                 }
+                    //             }
+                    //         })
+                    //     })
+                    // }
+                    localStorage.setItem("finalObject", JSON.stringify(finalObject))
+                    //ssi end
+                    // localStorage.removeItem("finalObject")
                 } else {
                     workspace.fireEvent('selected', data);
                 }
