@@ -16,21 +16,16 @@
                 link = L.DomUtil.create('a', 'icon-ruler', container),
                 map_container = map.getContainer(),
                 me = this;
-            // link.id="testing"
 
             link.href = '#';
             link.title = 'Toggle measurement tool';
 
             L.DomEvent.on(link, 'click', L.DomEvent.stop).on(link, 'click', function () {
-                // console.log('Click on pencil');
                 if (L.DomUtil.hasClass(link, 'icon-active')) {
-                    // console.log('Click on pencil in if');
                     // me.resetRuler(!!me.mainLayer);
                     // L.DomUtil.removeClass(link, 'icon-active');
                     // L.DomUtil.removeClass(map_container, 'ruler-map');
-                    // document.getElementById("testing").disabled = true;
                 } else {
-                    // console.log('Click on pencil in else');
                     me.initRuler();
                     L.DomUtil.addClass(link, 'icon-active');
                     L.DomUtil.addClass(map_container, 'ruler-map');
@@ -98,8 +93,16 @@
             me.tempPolygon = []
 
             this.clickEventFn = function (e) {
+                //added by ssi- start - issue - first time when click with dbl clcik then getting error of undefined
+                if (this.poly && me.latlngsList.length === 0) {
+                    me.latlngsList.push(this.latlngs);
+                }
+                //added by ssi- end
+
                 me.tempPolygon.push([e.latlng.lat, e.latlng.lng])
+
                 let len = me.tempPolygon.length
+
                 if (len >= 2) {
                     let last = me.tempPolygon[len - 1]
                     let lastToSecond = me.tempPolygon[len - 2]
@@ -117,7 +120,9 @@
                         me.preClick(e);
                         me.getMouseClickHandler(e);
                     }
-                    me.getDblClickHandler(e, poly);
+
+                    me.getDblClickHandler(e);
+                    // me.getDblClickHandler(e, poly);
                 }
                 else {
                     if (me.tempPolygon.length > 0) {
@@ -491,14 +496,9 @@
         },
 
         getMouseClickHandler: function (e) {
-            // console.log('e.latlng in click => ', e.latlng);
             var me = this;
             me.fixedLast = me.last;
             me.sum = 0;
-            // console.log('me.poly => ', me.poly);
-            // console.log('me.latlngsList in clcik => ', me.latlngsList);
-            //test case
-            // me.latlngsList.push(me.latlngs);
 
             if (me.poly) {
                 me.latlngsList.push(me.latlngs);
@@ -601,7 +601,6 @@
 
                     /* Review that the dots are in correct units */
                     this.convertDots();
-
                 } else {
                     this.cleanUpMarkers();
                     // this.displayMarkers.apply(this, [this.poly.getLatLngs(), false, this.sum]);
@@ -609,24 +608,23 @@
             }
         },
 
-        getDblClickHandler: function (e, poly = []) {
+        getDblClickHandler: function (e) {
             var azimut = '',
                 me = this;
-            // ------------------- latlong for draw ------------
+            // ------------------- latlng for draw ------------
             var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [], totalArea: 0 }
 
             var shapes = finalObject.shape || []
-            // console.log('me.latlngsList => ', me.latlngsList);
 
+            // to make same first and end point create tempArray
             var tempArray = []
             var tmpo = JSON.parse(JSON.stringify(me.latlngsList))
-            // console.log('(tmpo)[tmpo.length - 1][1] => ', (tmpo)[tmpo.length - 1] && (tmpo)[tmpo.length - 1][1]);
-            // console.log('e.latlng => ', e.latlng);
-            // console.log('tmpo => ', tmpo);
-            // if ((tmpo)[tmpo.length - 1]) {
-            tempArray.push((tmpo)[tmpo.length - 1][1], JSON.parse(JSON.stringify(e.latlng)))
-            tmpo.push(tempArray)
-            // }
+
+            if (tmpo.length > 1) {
+                tempArray.push((tmpo)[tmpo.length - 1][1], JSON.parse(JSON.stringify(e.latlng)))
+                tmpo.push(tempArray)
+            }
+
 
             if (finalObject && finalObject.shape.length < 0) {
                 finalObject.shape = shapes
@@ -639,9 +637,9 @@
             finalObject.shape.map(poly => {
                 poly.path.map(pl => {
                     pl.map(p => {
-                        if (!p.hasOwnProperty("color") && !p.hasOwnProperty("length") && !p.hasOwnProperty("isColorChanged") && !p.hasOwnProperty("label")) {
+                        if (!p.hasOwnProperty("color") && !p.hasOwnProperty("length") && !p.hasOwnProperty("label")) {
                             {
-                                p.color = "Blue", p.length = `${0} m`, p.isColorChanged = false, p.label = "Unspecified"
+                                p.color = "Blue", p.length = `${0} m`, p.label = "Unspecified"
                             }
                         }
                     })
@@ -649,7 +647,8 @@
             })
             const polygon = JSON.parse(localStorage.getItem("polygon")) || []
 
-            //update the finalObject as per the polygon for complete shape
+            //update the finalObject as per the polygon for complete shapes(first and last point same)
+
             finalObject.shape.length > 0 && finalObject.shape.map((shape, shapeIndex) => {
                 shape.path.map((shapePath, shapePathIndex) => {
                     polygon.map((polygonShape, polygonShapeIndex) => {
@@ -701,26 +700,39 @@
 
             var fireSelected = function (e) {
                 if (L.DomUtil.hasClass(e.originalEvent.target, 'close')) {
-                    // ssi
-                    // console.log('finalObject.shape => ', finalObject.shape, finalObject.shape.length - 1);
-                    // console.log(' => ', finalObject.shape.indexOf(finalObject.shape[finalObject.shape.length - 1]));
+                    var polyShapeDeleteId, polygonDeleteId
+                    var finalObject = JSON.parse(localStorage.getItem("finalObject"))
+                    var polygon = JSON.parse(localStorage.getItem("polygon"))
 
-                    // finalObject.shape.splice(finalObject.shape.length - 1, 1)
-                    // for (let index = 0; index < finalObject.shape.length; index++) {
-                    //     me.mainLayer.eachLayer(layer => {
-                    //         Object.keys(layer._layers).map(lyr => {
-                    //             if (layer._layers[lyr]._latlng && finalObject.shape[index].path) {
-                    //                 if (finalObject.shape[index].path[0][0].lat == layer._layers[lyr]._latlng.lat) {
-                                        me.mainLayer.removeLayer(workspace);
-                    //                     // finalObject.shape.splice(index, 1)
-                    //                 }
-                    //             }
-                    //         })
-                    //     })
-                    // }
+                    workspace.eachLayer(layer => {
+                        if (layer._latlng) {
+                            finalObject.shape.map((shape, shapeIndex) => {
+                                shape.path.map((path, pathIndex) => {
+                                    //Matching shape in finalObject
+                                    if ((layer._latlng.lat == path[0].lat || layer._latlng.lat == path[1].lat) && (layer._latlng.lng == path[0].lng || layer._latlng.lng == path[1].lng)) {
+                                        polyShapeDeleteId = shapeIndex
+                                    }
+
+                                    //Matching shape in polygon
+                                    polygon.map((polyShape, polyShapeIndex) => {
+                                        polyShape.map(poly => {
+                                            if (poly[0] == layer._latlng.lat || poly[1] == layer._latlng.lng) {
+                                                polygonDeleteId = polyShapeIndex
+                                            }
+                                        })
+                                    })
+                                })
+                            })
+                        }
+                    })
+                    //Delete shape on draw page
+                    finalObject.shape.splice(polyShapeDeleteId, 1)
+                    polygon.splice(polygonDeleteId, 1)
+                    me.mainLayer.removeLayer(workspace);
+
                     localStorage.setItem("finalObject", JSON.stringify(finalObject))
-                    //ssi end
-                    // localStorage.removeItem("finalObject")
+                    localStorage.setItem("polygon", JSON.stringify(polygon))
+
                 } else {
                     workspace.fireEvent('selected', data);
                 }
@@ -728,12 +740,9 @@
 
             workspace.on('click', fireSelected);
             workspace.fireEvent('selected', data);
-
             this.resetRuler(false);
         },
-
         purgeLayers: function (layers) {
-
             for (var i in layers) {
                 if (layers[i]) {
                     this.layer.removeLayer(layers[i]);

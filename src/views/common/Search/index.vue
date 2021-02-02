@@ -1,6 +1,11 @@
 <template>
   <div>
-    <input name="search" id="searchBox" placeholder="Search place" @click.prevent="handleInput" />
+    <input
+      name="search"
+      id="searchBox"
+      placeholder="Search place"
+      @click.prevent="handleInput"
+    />
     <div id="map"></div>
   </div>
 </template>
@@ -12,7 +17,7 @@ export default {
   data() {
     return {
       map: null,
-      value: "",
+      address: "",
     };
   },
   mounted() {
@@ -76,8 +81,8 @@ export default {
       $.get(
         "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=-41.2858&lon=174.78682",
         (data) => {
-          vueInstance.value = data.address.road;
           vueInstance.$store.commit("SELECTED_PLACE", data.address.road);
+          vueInstance.address = data.address.road;
         }
       );
 
@@ -117,11 +122,14 @@ export default {
         var group = L.featureGroup();
 
         places.forEach(function (place) {
-          vueInstance.value = place.formatted_address;
+          vueInstance.address = place.formatted_address;
           vueInstance.$store.commit("SELECTED_PLACE", place.formatted_address);
 
           setTimeout(() => {
-            localStorage.setItem( "initLatLng", JSON.stringify(place.geometry.location));
+            localStorage.setItem(
+              "initLatLng",
+              JSON.stringify(place.geometry.location)
+            );
           }, 100);
 
           delete L.Icon.Default.prototype._getIconUrl;
@@ -144,7 +152,10 @@ export default {
       });
       this.map.on("zoomend", function (e) {
         localStorage.setItem("zoom", e.target._zoom);
-        localStorage.setItem( "initLatLng", JSON.stringify(e.sourceTarget._animateToCenter) );
+        localStorage.setItem(
+          "initLatLng",
+          JSON.stringify(e.sourceTarget._animateToCenter)
+        );
       });
 
       if (_finalObject && _finalObject.shape && _finalObject.shape.length > 0) {

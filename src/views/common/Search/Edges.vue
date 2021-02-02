@@ -84,11 +84,14 @@ export default {
   methods: {
     initMap() {
       var vueInstance = this;
-      var _finalObject = JSON.parse( JSON.stringify(JSON.parse(localStorage.getItem("finalObject"))));
+      var _finalObject = JSON.parse(
+        JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
+      );
       this.zoom = localStorage.getItem("zoom") || 16;
 
       var initLatLng =
-        (localStorage.getItem("initLatLng") != null || localStorage.getItem("initLatLng") != undefined) &&
+        (localStorage.getItem("initLatLng") != null ||
+          localStorage.getItem("initLatLng") != undefined) &&
         JSON.parse(localStorage.getItem("initLatLng"));
 
       this.polyData = JSON.parse(
@@ -105,7 +108,9 @@ export default {
         zoomAnimation: false,
       }).setView([this.initLat, this.initLng], this.zoom);
 
-      L.tileLayer( "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 20, maxNativeZoom: 19 }
+      L.tileLayer(
+        "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        { maxZoom: 20, maxNativeZoom: 19 }
       ).addTo(this.map);
 
       L.marker([this.initLat, this.initLng]).addTo(this.map);
@@ -114,15 +119,17 @@ export default {
         localStorage.setItem("zoom", e.target._zoom);
       });
 
-      if ( _finalObject && _finalObject.shape != null && _finalObject.shape.length > 0 ) {
+      if (
+        _finalObject &&
+        _finalObject.shape != null &&
+        _finalObject.shape.length > 0
+      ) {
         _finalObject.shape.map((shp, shpIndex) => {
           shp.path.map((path, pathIndex) => {
             //  create a polyline
             var poly = new L.Polyline(path, {
               // showMeasurements: true,
-              color: vueInstance.selectedColor
-                ? vueInstance.selectedColor
-                : path[0].color,
+              color: vueInstance.selectedColor || path[0].color,
               dashArray: "5 5",
               lineCap: "round",
               weight: 3,
@@ -130,7 +137,10 @@ export default {
               // measurementOptions: { imperial: true },
             }).addTo(this.map);
 
-            var distance = L.latLng([path[0].lat, path[0].lng]) .distanceTo([ path[1].lat, path[1].lng, ]);
+            var distance = L.latLng([path[0].lat, path[0].lng]).distanceTo([
+              path[1].lat,
+              path[1].lng,
+            ]);
 
             path[0]["length"] = `${distance.toFixed(1)} m`;
             path[1]["length"] = `${distance.toFixed(1)} m`;
@@ -145,7 +155,7 @@ export default {
                 vueInstance.colorPolyline(shp, path, e, _finalObject);
               } else if (vueInstance.enableDelete) {
                 // Delete line code
-                vueInstance.deletePolyline(shp, pathIndex, shpIndex, path, e, _finalObject);
+                vueInstance.deletePolyline( shp, pathIndex, shpIndex, path, e, _finalObject );
               }
             });
             _finalObject.totalFacets = this.polyData.length;
@@ -163,12 +173,26 @@ export default {
         path[1].lng == e.sourceTarget._latlngs[1].lng
       ) {
         shp.path.splice(pathIndex, 1);
+        shp.path.length === 0 && _finalObject.shape.splice(shpIndex, 1);
+
         this.polyData.map((polyD, ind) => {
           polyD.map((plData, j) => {
-            if ( plData[0] == e.sourceTarget._latlngs[1].lat && plData[1] == e.sourceTarget._latlngs[1].lng ) {
+            if (
+              plData[0] == e.sourceTarget._latlngs[1].lat &&
+              plData[1] == e.sourceTarget._latlngs[1].lng
+            ) {
               this.polyData.splice(ind, 1);
-              _finalObject.totalArea = parseFloat((_finalObject.totalArea - _finalObject.shape[shpIndex].area ).toFixed(2));
-              _finalObject.shape[shpIndex].area = 0;
+              if (
+                _finalObject.shape[shpIndex] &&
+                _finalObject.shape[shpIndex].area
+              ) {
+                _finalObject.totalArea = parseFloat(
+                  (
+                    _finalObject.totalArea - _finalObject.shape[shpIndex].area
+                  ).toFixed(2)
+                );
+                _finalObject.shape[shpIndex].area = 0;
+              }
             }
           });
         });
@@ -179,14 +203,17 @@ export default {
             delete shp.type[path[0].label];
           }
         }
-        if ( _finalObject.measurement && _finalObject.measurement.hasOwnProperty(path[0].label) ) {
+        if (
+          _finalObject.measurement &&
+          _finalObject.measurement.hasOwnProperty(path[0].label)
+        ) {
           _finalObject.measurement[path[0].label].length -= len;
           if (_finalObject.measurement[path[0].label].length <= 0) {
             delete _finalObject.measurement[path[0].label];
           }
         }
+        e.sourceTarget.remove(this.map);
       }
-      e.sourceTarget.remove(this.map);
       localStorage.setItem("polygon", JSON.stringify(this.polyData));
       _finalObject.totalFacets = this.polyData.length;
       localStorage.setItem("finalObject", JSON.stringify(_finalObject));
@@ -203,6 +230,7 @@ export default {
           p.isColorChanged = true;
           p.label = this.selectedLabel;
         });
+        e.sourceTarget.setStyle({ color: this.selectedColor });
       }
       let unit = path[0].length.split(" ").pop();
       let length = parseFloat(path[0].length.split(" ")[0]);
@@ -239,7 +267,6 @@ export default {
           },
         };
       }
-      e.sourceTarget.setStyle({ color: this.selectedColor });
       localStorage.setItem("finalObject", JSON.stringify(_finalObject));
     },
     handleColor(color, label) {
