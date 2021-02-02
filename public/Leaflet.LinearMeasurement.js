@@ -625,16 +625,15 @@
                 tmpo.push(tempArray)
             }
 
-
-            if (finalObject && finalObject.shape.length < 0) {
+            if (finalObject && finalObject.shape && finalObject.shape.length < 0) {
                 finalObject.shape = shapes
             } else {
                 shapes.push({ path: tmpo, area: 0, unit: "m²" })
                 finalObject.shape = shapes
             }
-            // ------------------------final
 
-            finalObject.shape.map(poly => {
+            // Set out the finalObject
+            finalObject.shape.length > 0 && finalObject.shape.map(poly => {
                 poly.path.map(pl => {
                     pl.map(p => {
                         if (!p.hasOwnProperty("color") && !p.hasOwnProperty("length") && !p.hasOwnProperty("label")) {
@@ -647,7 +646,7 @@
             })
             const polygon = JSON.parse(localStorage.getItem("polygon")) || []
 
-            //update the finalObject as per the polygon for complete shapes(first and last point same)
+            //Update the finalObject as per the polygon for complete shapes(first and last point same)
 
             finalObject.shape.length > 0 && finalObject.shape.map((shape, shapeIndex) => {
                 shape.path.map((shapePath, shapePathIndex) => {
@@ -706,13 +705,12 @@
 
                     workspace.eachLayer(layer => {
                         if (layer._latlng) {
-                            finalObject.shape.map((shape, shapeIndex) => {
+                            finalObject.shape.length > 0 && finalObject.shape.map((shape, shapeIndex) => {
                                 shape.path.map((path, pathIndex) => {
                                     //Matching shape in finalObject
                                     if ((layer._latlng.lat == path[0].lat || layer._latlng.lat == path[1].lat) && (layer._latlng.lng == path[0].lng || layer._latlng.lng == path[1].lng)) {
                                         polyShapeDeleteId = shapeIndex
                                     }
-
                                     //Matching shape in polygon
                                     polygon.map((polyShape, polyShapeIndex) => {
                                         polyShape.map(poly => {
@@ -725,7 +723,7 @@
                             })
                         }
                     })
-                    //Delete shape on draw page
+                    //Delete shape on draw page on click close icon
                     finalObject.shape.splice(polyShapeDeleteId, 1)
                     polygon.splice(polygonDeleteId, 1)
                     me.mainLayer.removeLayer(workspace);

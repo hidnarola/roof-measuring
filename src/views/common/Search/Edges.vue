@@ -4,16 +4,7 @@
     <div v-if="isOpenModel" class="confirmation_popup">
       <div class="confirmation_body">
         <span class="pop-close" @click="handleModal">
-          <svg
-            version="1.1"
-            xmlns="http://www.w3.org/2000/svg"
-            xmlns:xlink="http://www.w3.org/1999/xlink"
-            x="0px"
-            y="0px"
-            viewBox="0 0 329 329"
-            style="enable-background: new 0 0 329 329"
-            xml:space="preserve"
-          >
+          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 329 329" style="enable-background: new 0 0 329 329" xml:space="preserve" >
             <path
               d="M194.6,164.5L322.7,36.4c8.3-8.3,8.3-21.8,0-30.1c-8.3-8.3-21.8-8.3-30.1,0L164.5,134.4L36.4,6.2c-8.3-8.3-21.8-8.3-30.1,0 c-8.3,8.3-8.3,21.8,0,30.1l128.1,128.1L6.3,292.6c-8.3,8.3-8.3,21.8,0,30.1c4.2,4.2,9.6,6.2,15.1,6.2s10.9-2.1,15.1-6.2l128.1-128.1 	l128.1,128.1c4.2,4.2,9.6,6.2,15.1,6.2c5.5,0,10.9-2.1,15.1-6.2c8.3-8.3,8.3-21.8,0-30.1L194.6,164.5z"
             /></svg
@@ -22,9 +13,7 @@
         <p>Are you sure you want to delete all edges?</p>
         <div class="btn-wrap">
           <button class="btn btn-trans" @click="handleModal">Cancel</button>
-          <button class="btn btn-blue" @click="handleRemoveAll()">
-            Delete all edges
-          </button>
+          <button class="btn btn-blue" @click="handleRemoveAll()"> Delete all edges </button>
         </div>
       </div>
     </div>
@@ -38,14 +27,10 @@
         </div>
       </div>
       <div class="name">
-        <button @click="handleRemove()" class="delete cm-btn">
-          Delete Edge
-        </button>
+        <button @click="handleRemove()" class="delete cm-btn"> Delete Edge </button>
       </div>
       <div class="name">
-        <button @click="handleModal" class="delete cm-btn">
-          Delete All Edges
-        </button>
+        <button @click="handleModal" class="delete cm-btn"> Delete All Edges </button>
       </div>
     </div>
   </div>
@@ -53,6 +38,7 @@
 
 <script>
 import _ from "lodash";
+
 export default {
   name: "LeafletMap",
   data() {
@@ -67,7 +53,6 @@ export default {
       ],
       selectedColor: null,
       selectedLabel: null,
-      finalObject: null,
       enableDelete: false,
       enableColor: false,
       isOpenModel: false,
@@ -84,9 +69,7 @@ export default {
   methods: {
     initMap() {
       var vueInstance = this;
-      var _finalObject = JSON.parse(
-        JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
-      );
+      var _finalObject = JSON.parse( JSON.stringify(JSON.parse(localStorage.getItem("finalObject"))));
       this.zoom = localStorage.getItem("zoom") || 16;
 
       var initLatLng =
@@ -119,22 +102,18 @@ export default {
         localStorage.setItem("zoom", e.target._zoom);
       });
 
-      if (
-        _finalObject &&
-        _finalObject.shape != null &&
-        _finalObject.shape.length > 0
-      ) {
+      if ( _finalObject && _finalObject.shape != null && _finalObject.shape.length > 0 ) {
         _finalObject.shape.map((shp, shpIndex) => {
           shp.path.map((path, pathIndex) => {
             //  create a polyline
             var poly = new L.Polyline(path, {
-              // showMeasurements: true,
+              showMeasurements: true,
               color: vueInstance.selectedColor || path[0].color,
               dashArray: "5 5",
               lineCap: "round",
               weight: 3,
               opacity: 1,
-              // measurementOptions: { imperial: true },
+              measurementOptions: { imperial: true },
             }).addTo(this.map);
 
             var distance = L.latLng([path[0].lat, path[0].lng]).distanceTo([
@@ -151,15 +130,14 @@ export default {
             });
             poly.on("click", function (e) {
               if (vueInstance.enableColor) {
-                //Color change cod
+                //Color change code
                 vueInstance.colorPolyline(shp, path, e, _finalObject);
               } else if (vueInstance.enableDelete) {
                 // Delete line code
-                vueInstance.deletePolyline( shp, pathIndex, shpIndex, path, e, _finalObject );
+                vueInstance.deletePolyline(shp, pathIndex, shpIndex, path, e, _finalObject );
               }
             });
             _finalObject.totalFacets = this.polyData.length;
-            this.finalObject = _finalObject;
             localStorage.setItem("finalObject", JSON.stringify(_finalObject));
           });
         });
@@ -177,20 +155,10 @@ export default {
 
         this.polyData.map((polyD, ind) => {
           polyD.map((plData, j) => {
-            if (
-              plData[0] == e.sourceTarget._latlngs[1].lat &&
-              plData[1] == e.sourceTarget._latlngs[1].lng
-            ) {
+            if ( plData[0] == e.sourceTarget._latlngs[1].lat && plData[1] == e.sourceTarget._latlngs[1].lng ) {
               this.polyData.splice(ind, 1);
-              if (
-                _finalObject.shape[shpIndex] &&
-                _finalObject.shape[shpIndex].area
-              ) {
-                _finalObject.totalArea = parseFloat(
-                  (
-                    _finalObject.totalArea - _finalObject.shape[shpIndex].area
-                  ).toFixed(2)
-                );
+              if ( _finalObject.shape[shpIndex] && _finalObject.shape[shpIndex].area ) {
+                _finalObject.totalArea = parseFloat((_finalObject.totalArea - _finalObject.shape[shpIndex].area).toFixed(2));
                 _finalObject.shape[shpIndex].area = 0;
               }
             }
@@ -203,10 +171,7 @@ export default {
             delete shp.type[path[0].label];
           }
         }
-        if (
-          _finalObject.measurement &&
-          _finalObject.measurement.hasOwnProperty(path[0].label)
-        ) {
+        if (_finalObject.measurement && _finalObject.measurement.hasOwnProperty(path[0].label)) {
           _finalObject.measurement[path[0].label].length -= len;
           if (_finalObject.measurement[path[0].label].length <= 0) {
             delete _finalObject.measurement[path[0].label];
@@ -280,7 +245,6 @@ export default {
       this.enableColor = false;
     },
     handleRemoveAll() {
-      this.finalObject = null;
       localStorage.removeItem("finalObject");
       localStorage.removeItem("polygon");
       this.map.off();
@@ -296,6 +260,9 @@ export default {
         ele.classList.add("OpenPopup");
         this.isOpenModel = true;
       }
+    },
+    drawShape(map, _finalObject, selectedColor, totalFacets, isEdges, isFacets) {
+      drawShapefunction(map, _finalObject, selectedColor, totalFacets, isEdges, isFacets);
     },
   },
 };

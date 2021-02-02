@@ -1,17 +1,14 @@
 <template>
   <div>
-    <input
-      name="search"
-      id="searchBox"
-      placeholder="Search place"
-      @click.prevent="handleInput"
-    />
+    <input name="search" id="searchBox" placeholder="Search place" @click.prevent="handleInput" />
     <div id="map"></div>
   </div>
 </template>
 
 <script>
 import $ from "jquery";
+import { drawShapefunction } from "../../../shared/shared";
+
 export default {
   name: "LeafletMap",
   data() {
@@ -32,9 +29,7 @@ export default {
       var zoom = localStorage.getItem("zoom");
       var initLatLng = JSON.parse(localStorage.getItem("initLatLng"));
 
-      var _finalObject = JSON.parse(
-        JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
-      );
+      var _finalObject = JSON.parse( JSON.stringify(JSON.parse(localStorage.getItem("finalObject"))));
       //Load map
       this.map = L.map("map").setView(
         [
@@ -57,10 +52,7 @@ export default {
         shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
       });
 
-      L.marker([
-        initLatLng != null ? initLatLng.lat : -41.2858,
-        initLatLng != null ? initLatLng.lng : 174.78682,
-      ]).addTo(this.map);
+      L.marker([ initLatLng != null ? initLatLng.lat : -41.2858, initLatLng != null ? initLatLng.lng : 174.78682, ]).addTo(this.map);
 
       var Ruler = L.Control.LinearMeasurement.extend({
         // layerSelected: function (e) {
@@ -81,11 +73,10 @@ export default {
       $.get(
         "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=-41.2858&lon=174.78682",
         (data) => {
-          vueInstance.$store.commit("SELECTED_PLACE", data.address.road);
-          vueInstance.address = data.address.road;
+          //set address in finalObject
+          vueInstance.setAddress(data.address.road);
         }
       );
-
       var info = L.control({ position: "topleft" });
 
       info.onAdd = function (map) {
@@ -95,6 +86,7 @@ export default {
 
       info.addTo(this.map);
 
+      // Place search code
       var GooglePlacesSearchBox = L.Control.extend({
         onAdd: () => {
           var element = document.getElementById("searchBox");
@@ -114,22 +106,16 @@ export default {
         _finalObject = null;
 
         var places = searchBox.getPlaces();
-
         if (places.length == 0) {
           return;
         }
-
         var group = L.featureGroup();
 
         places.forEach(function (place) {
-          vueInstance.address = place.formatted_address;
-          vueInstance.$store.commit("SELECTED_PLACE", place.formatted_address);
-
+          //set address in finalObject
+          vueInstance.setAddress(place.formatted_address);
           setTimeout(() => {
-            localStorage.setItem(
-              "initLatLng",
-              JSON.stringify(place.geometry.location)
-            );
+            localStorage.setItem( "initLatLng", JSON.stringify(place.geometry.location) );
           }, 100);
 
           delete L.Icon.Default.prototype._getIconUrl;
@@ -140,10 +126,7 @@ export default {
             shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
           });
           // Create a marker for each place.
-          var marker = L.marker([
-            place.geometry.location.lat(),
-            place.geometry.location.lng(),
-          ]);
+          var marker = L.marker([ place.geometry.location.lat(), place.geometry.location.lng(), ]);
           group.addLayer(marker);
         });
 
@@ -152,43 +135,11 @@ export default {
       });
       this.map.on("zoomend", function (e) {
         localStorage.setItem("zoom", e.target._zoom);
-        localStorage.setItem(
-          "initLatLng",
-          JSON.stringify(e.sourceTarget._animateToCenter)
-        );
+        localStorage.setItem( "initLatLng", JSON.stringify(e.sourceTarget._animateToCenter) );
       });
-
       if (_finalObject && _finalObject.shape && _finalObject.shape.length > 0) {
-        _finalObject.shape.map((shp) => {
-          for (var i = 0; i < shp.path.length; i++) {
-            //  create a polyline
-            var poly = new L.Polyline(shp.path[i], {
-              color: vueInstance.selectedColor
-                ? vueInstance.selectedColor
-                : shp.path[i][0].color,
-              dashArray: "5 5",
-              lineCap: "round",
-              weight: 3,
-              opacity: 1,
-              // measurementOptions: { imperial: true },
-            }).addTo(this.map);
-
-            var distance = L.latLng([
-              shp.path[i][0].lat,
-              shp.path[i][0].lng,
-            ]).distanceTo([shp.path[i][1].lat, shp.path[i][1].lng]);
-
-            shp.path[i][0]["length"] = `${distance.toFixed(1)} m`;
-            shp.path[i][1]["length"] = `${distance.toFixed(1)} m`;
-
-            poly.setText(`${distance.toFixed(1)} m`, {
-              center: true,
-              attributes: { fill: "yellow" },
-              // orientation: "70",
-            });
-            localStorage.setItem("finalObject", JSON.stringify(_finalObject));
-          }
-        });
+        //Draw shape
+        this.drawShape(this.map, _finalObject, vueInstance.selectedColor);
       }
     },
     handler(event) {
@@ -196,6 +147,20 @@ export default {
     },
     handleInput(e) {
       e.stopPropagation();
+    },
+    drawShape(map, _finalObject, selectedColor) {
+      drawShapefunction(map, _finalObject, selectedColor);
+    },
+    setAddress(address) {
+      let finalObject = JSON.parse(localStorage.getItem("finalObject"));
+      if (finalObject === null) {
+        let finalObject = {};
+        finalObject.address = address;
+        localStorage.setItem("finalObject", JSON.stringify(finalObject));
+      } else {
+        finalObject.address = address;
+        localStorage.setItem("finalObject", JSON.stringify(finalObject));
+      }
     },
   },
 };

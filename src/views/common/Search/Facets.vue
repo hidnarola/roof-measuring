@@ -3,7 +3,7 @@
     <button
       @click="handlePdf"
       class="download-pdf-btn"
-      :disabled="(polyData && polyData.length > 0) || (finalObject && finalObject.shape.length > 0) ? false : true"
+      :disabled="(polyData && polyData.length > 0) || (finalObject && finalObject.shape && finalObject.shape.length > 0) ? false : true"
     >
       Download Pdf
     </button>
@@ -15,7 +15,8 @@
 <script>
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
-import html2canvas from "html2canvas";
+import { drawShapefunction } from "../../../shared/shared";
+
 export default {
   name: "LeafletMap",
   data() {
@@ -38,11 +39,9 @@ export default {
   methods: {
     initMap() {
       var vueInstance = this;
-
       var _finalObject = JSON.parse(
         JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
       );
-
       this.zoom = JSON.parse(localStorage.getItem("zoom")) || 16;
 
       var initLatLng =
@@ -59,10 +58,8 @@ export default {
         fadeAnimation: false,
         zoomAnimation: false,
       }).setView([this.initLat, this.initLng], this.zoom);
-
       // this.map.doubleClickZoom.disable();
       // this.map.scrollWheelZoom.disable();
-
       this.tileLayerData = L.tileLayer(
         "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         { maxZoom: 20, maxNativeZoom: 19 }
@@ -74,10 +71,7 @@ export default {
       // ----- polygon draw
       this.polyData &&
         this.polyData.map((shape, i) => {
-          if (
-            shape[0][0] == shape[shape.length - 1][0] &&
-            shape[0][1] == shape[shape.length - 1][1]
-          ) {
+          if ( shape[0][0] == shape[shape.length - 1][0] && shape[0][1] == shape[shape.length - 1][1] ) {
             var polygon = L.polygon([shape], {
               showMeasurements: true,
               // measurementOptions: { imperial: true },
@@ -93,19 +87,12 @@ export default {
       // setting out the area measurements
       this.map.eachLayer((layer) => {
         if (layer._latlngs) {
-          _finalObject.shape &&
-            _finalObject.shape.map((shapes, i) => {
+          _finalObject.shape && _finalObject.shape.length > 0 && _finalObject.shape.map((shapes, i) => {
               shapes.path.map((pathPoint, j) => {
-                layer._latlngs &&
-                  layer._latlngs[0].map((_latlng) => {
-                    if (
-                      pathPoint[0].lat == _latlng.lat &&
-                      pathPoint[0].lng == _latlng.lng
-                    ) {
+                layer._latlngs && layer._latlngs[0].map((_latlng) => {
+                    if (pathPoint[0].lat == _latlng.lat && pathPoint[0].lng == _latlng.lng) {
                       _finalObject.shape[i].area = parseFloat(
-                        Math.round(
-                          L.GeometryUtil.geodesicArea(layer._latlngs[0])
-                        )
+                        Math.round(L.GeometryUtil.geodesicArea(layer._latlngs[0]))
                       );
                       _finalObject.shape[i].unit = "m²";
                     }
@@ -114,8 +101,9 @@ export default {
             });
         }
       });
+
       var totalArea = 0;
-      if (_finalObject && _finalObject.shape) {
+      if (_finalObject && _finalObject.shape && _finalObject.shape.length > 0) {
         _finalObject.shape.map((shapes, i) => {
           totalArea += shapes.area;
         });
@@ -123,40 +111,10 @@ export default {
         _finalObject.unit = "m²";
       }
 
-      if (
-        _finalObject &&
-        _finalObject.shape != null &&
-        _finalObject.shape.length > 0
-      ) {
-        _finalObject.shape.map((shp) => {
-          for (var i = 0; i < shp.path.length; i++) {
-            //  create a polyline
-            var poly = new L.Polyline(shp.path[i], {
-              color: vueInstance.selectedColor
-                ? vueInstance.selectedColor
-                : shp.path[i][0].color,
-              dashArray: "5 5",
-              lineCap: "round",
-              weight: 3,
-              opacity: 1,
-            }).addTo(this.map);
-
-            var distance = L.latLng([
-              shp.path[i][0].lat,
-              shp.path[i][0].lng,
-            ]).distanceTo([shp.path[i][1].lat, shp.path[i][1].lng]);
-
-            shp.path[i][0]["length"] = `${distance.toFixed(1)} m`;
-            shp.path[i][1]["length"] = `${distance.toFixed(1)} m`;
-
-            poly.setText(`${shp.path[i][0].length}`, {
-              center: true,
-              attributes: { fill: "yellow" },
-            });
-          }
-        });
-        _finalObject.totalFacets = this.polyData.length;
+      if (_finalObject && _finalObject.shape && _finalObject.shape.length > 0) {
+        this.drawShape(this.map, _finalObject, vueInstance.selectedColor, this.polyData.length, false, true);
       }
+
       this.finalObject = _finalObject;
       localStorage.setItem("finalObject", JSON.stringify(_finalObject));
       // ------ polyline end
@@ -187,16 +145,8 @@ export default {
         //Footer
         doc.setFontSize(10);
         doc.setTextColor("gray");
-        doc.text(
-          10,
-          285,
-          "Copyright © 2020 Roofmeasurement.com | All rights reserved."
-        );
-        doc.text(
-          doc.internal.pageSize.getWidth() - 40,
-          285,
-          "page " + doc.page
-        );
+        doc.text(10, 285, "Copyright © 2020 Roofmeasurement.com | All rights reserved.");
+        doc.text( doc.internal.pageSize.getWidth() - 40, 285, "page " + doc.page );
         doc.page++;
       }
 
@@ -220,17 +170,18 @@ export default {
       var areaRows = [];
       let _printData = JSON.parse(JSON.stringify(this.finalObject));
 
-      _printData.shape.map((latlng, i) => {
-        if (latlng.area != 0) {
-          areaTable.push({
-            index: `Shape - ${i}`,
-            area: latlng.area + latlng.unit,
-            totalArea:
-              JSON.parse(JSON.stringify(this.finalObject)).totalArea +
-              JSON.parse(JSON.stringify(this.finalObject)).unit,
-          });
-        }
-      });
+      _printData.shape.length > 0 &&
+        _printData.shape.map((latlng, i) => {
+          if (latlng.area != 0) {
+            areaTable.push({
+              index: `Shape - ${i}`,
+              area: latlng.area + latlng.unit,
+              totalArea:
+                JSON.parse(JSON.stringify(this.finalObject)).totalArea +
+                JSON.parse(JSON.stringify(this.finalObject)).unit,
+            });
+          }
+        });
 
       _printData.measurement &&
         Object.keys(_printData.measurement).map((key, index) => {
@@ -268,28 +219,17 @@ export default {
       doc.text(10, 20, "Roof Report");
       doc.setFontSize(12);
       doc.setTextColor("Gray");
-      console.log('this.$store.state.map.place => ',this.$store.state.map.place);
-      doc.text(
-        this.$store.state.map.place ? this.$store.state.map.place : "",
-        20,
-        30
-      );
+      doc.text(_printData && _printData.address, 20, 30);
       doc.text(`${_printData.totalFacets} Facets`, 20, 40);
-      doc.text(
-        `Total Facet Area : ${_printData.totalArea} ${_printData.unit}`,
-        20,
-        50
-      );
-
+      doc.text( `Total Facet Area : ${_printData.totalArea} ${_printData.unit}`, 20, 50 );
       doc.addImage(this.imgElement, "PNG", 20, 60, 170, 150);
-      // ---------------Length Measurement Report--------------------
+      // --------------- Length Measurement Report--------------------
       doc.addPage();
       header();
       footer();
       doc.setFontSize(16);
       doc.setTextColor("#259ad7");
       doc.text(`Length Measurement Report`, 10, 20);
-
       doc.setFontSize(12);
       doc.setTextColor("gray");
       doc.autoTable(edgesCol, edgesRows, { startY: 30 });
@@ -318,13 +258,7 @@ export default {
           doc.text(`Measurement`, 20, 30);
           doc.setFontSize(11);
           doc.setTextColor("Gray");
-          doc.text(
-            `Total Roof Facets ${
-              _printData.totalFacets / _printData.totalFacets
-            } facets`,
-            20,
-            40
-          );
+          doc.text( `Total Roof Facets ${ _printData.totalFacets / _printData.totalFacets } facets`, 20, 40 );
 
           let _EavesRakes = 0,
             _HipsRidges = 0,
@@ -332,13 +266,7 @@ export default {
             stayY;
           if (shp.type) {
             Object.keys(shp.type).map((key, index) => {
-              doc.text(
-                `Total ${shp.type[key].label} ${shp.type[key].length.toFixed(
-                  2
-                )} ${shp.type[key].unit}`,
-                20,
-                50 + index * 10
-              );
+              doc.text(`Total ${shp.type[key].label} ${shp.type[key].length.toFixed( 2 )} ${shp.type[key].unit}`, 20, 50 + index * 10);
               stayY = 50 + index * 10;
               switch (key) {
                 case "Hips":
@@ -360,16 +288,8 @@ export default {
                 shp.type[key] && shp.type[key].unit && shp.type[key].unit;
             });
 
-            doc.text(
-              `Hips + Ridges ${_HipsRidges.toFixed(2)} ${_lengthUnit}`,
-              20,
-              stayY + 10
-            );
-            doc.text(
-              `Eaves + Rakes ${_EavesRakes.toFixed(2)} ${_lengthUnit}`,
-              20,
-              stayY + 20
-            );
+            doc.text(`Hips + Ridges ${_HipsRidges.toFixed(2)} ${_lengthUnit}`, 20, stayY + 10);
+            doc.text( `Eaves + Rakes ${_EavesRakes.toFixed(2)} ${_lengthUnit}`, 20, stayY + 20 );
             doc.text(`Total Roof Area ${shp.area + shp.unit}`, 20, stayY + 30);
           }
         }
@@ -382,15 +302,11 @@ export default {
       doc.setFontSize(16);
       doc.setTextColor("#259ad7");
       doc.text(`All Shape Structures Summary`, 15, 20);
-
       var point;
       for (var i = 0; i < this.polyData.length; i++) {
         context.beginPath();
         for (var j = 0; j < this.polyData[i].length; j++) {
-          point = this.map.latLngToLayerPoint([
-            this.polyData[i][j][0],
-            this.polyData[i][j][1],
-          ]);
+          point = this.map.latLngToLayerPoint([ this.polyData[i][j][0], this.polyData[i][j][1], ]);
           context.strokeStyle = "#259ad7";
           context.lineWidth = 1.5;
           context.lineTo(point.x, point.y);
@@ -411,14 +327,7 @@ export default {
         const marginX = (pageWidth - canvasWidth) / 2;
         const marginY = (pageHeight - canvasHeight) / 2;
 
-        doc.addImage(
-          imgData,
-          "PNG",
-          marginX,
-          marginY,
-          canvasWidth,
-          canvasHeight
-        );
+        doc.addImage(imgData, "PNG", marginX, marginY, canvasWidth, canvasHeight );
       }
       // -----------All Structures Summary----------
       doc.addPage();
@@ -432,26 +341,12 @@ export default {
       doc.text(`Measurement`, 20, 30);
       doc.setFontSize(11);
       doc.setTextColor("Gray");
-      doc.text(
-        `Total Roof Area ${_printData.totalArea} ${_printData.unit}`,
-        20,
-        40
-      );
+      doc.text( `Total Roof Area ${_printData.totalArea} ${_printData.unit}`, 20, 40 );
       doc.text(`Total Roof Facets ${_printData.totalFacets} facets`, 20, 50);
-      let EavesRakes = 0,
-        HipsRidges = 0,
-        startY = 0,
-        lengthUnit;
+      let EavesRakes = 0, HipsRidges = 0, startY = 0, lengthUnit;
       if (_printData.measurement) {
         Object.keys(_printData.measurement).map((key, index) => {
-          doc.text(
-            `Total ${key} ${_printData.measurement[key].length.toFixed(2)} ${
-              _printData.measurement[key].unit
-            }`,
-            20,
-            60 + index * 10
-          );
-
+          doc.text( `Total ${key} ${_printData.measurement[key].length.toFixed(2)} ${ _printData.measurement[key].unit }`, 20, 60 + index * 10 );
           startY = 60 + index * 10;
           switch (key) {
             case "Hips":
@@ -469,24 +364,16 @@ export default {
             default:
               break;
           }
-          lengthUnit =
-            _printData.measurement[key] &&
-            _printData.measurement[key].unit &&
-            _printData.measurement[key].unit;
+          lengthUnit = _printData.measurement[key] && _printData.measurement[key].unit && _printData.measurement[key].unit;
         });
-        doc.text(
-          `Hips + Ridges ${HipsRidges.toFixed(2)} ${lengthUnit}`,
-          20,
-          startY + 10
-        );
-        doc.text(
-          `Eaves + Rakes ${EavesRakes.toFixed(2)} ${lengthUnit}`,
-          20,
-          startY + 20
-        );
+        doc.text( `Hips + Ridges ${HipsRidges.toFixed(2)} ${lengthUnit}`, 20, startY + 10 );
+        doc.text( `Eaves + Rakes ${EavesRakes.toFixed(2)} ${lengthUnit}`, 20, startY + 20 );
       }
       doc.save("map_report.pdf");
       // doc = new jsPDF();
+    },
+    drawShape( map, _finalObject, selectedColor, totalFacets, isEdges, isFacets ) {
+      drawShapefunction( map, _finalObject, selectedColor, totalFacets, isEdges, isFacets );
     },
   },
 };
