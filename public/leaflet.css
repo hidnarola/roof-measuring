@@ -363,8 +363,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 
 /* general typography */
-.leaflet-container {
+/* .leaflet-container {
 	font: 14px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
+} */
+/* added by ssi */
+.leaflet-container {
+	font: 11px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
 }
 
 
