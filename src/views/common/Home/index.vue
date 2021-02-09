@@ -47,11 +47,7 @@ import Edges from "../Search/Edges";
 import Facets from "../Search/Facets";
 export default {
   name: "home",
-  components: {
-    Draw,
-    Edges,
-    Facets,
-  },
+  components: { Draw, Edges, Facets},
   data() {
     return {
       isOpenFirst: true,

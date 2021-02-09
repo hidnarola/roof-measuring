@@ -38,7 +38,7 @@
 
 <script>
 import _ from "lodash";
-
+import {  initLat, initLng ,initZoom} from "../../../shared/shared";
 export default {
   name: "LeafletMap",
   data() {
@@ -57,9 +57,9 @@ export default {
       enableColor: false,
       isOpenModel: false,
       map: null,
-      initLat: -41.2858,
-      initLng: 174.78682,
-      zoom: 16,
+      lat:initLat,
+      lng: initLng,
+      zoom: initZoom,
       polyData: [],
     };
   },
@@ -69,40 +69,29 @@ export default {
   methods: {
     initMap() {
       var vueInstance = this;
-      var _finalObject = JSON.parse( JSON.stringify(JSON.parse(localStorage.getItem("finalObject"))));
-      this.zoom = localStorage.getItem("zoom") || 16;
+      var _finalObject = JSON.parse(JSON.stringify(JSON.parse(localStorage.getItem("finalObject"))));
+      this.zoom = localStorage.getItem("zoom") || initZoom;
+      var initLatLng = JSON.parse(localStorage.getItem("initLatLng"));
+      this.polyData = JSON.parse(JSON.stringify(JSON.parse(localStorage.getItem("polygon"))));
 
-      var initLatLng =
-        (localStorage.getItem("initLatLng") != null ||
-          localStorage.getItem("initLatLng") != undefined) &&
-        JSON.parse(localStorage.getItem("initLatLng"));
-
-      this.polyData = JSON.parse(
-        JSON.stringify(JSON.parse(localStorage.getItem("polygon")))
-      );
-
-      this.initLat = (initLatLng && initLatLng.lat) || -41.2858;
-      this.initLng = (initLatLng && initLatLng.lng) || 174.78682;
+      this.lat = (initLatLng && initLatLng.lat) || initLat;
+      this.lng = (initLatLng && initLatLng.lng) || initLng;
 
       this.map = L.map("myMap", {
         attributionControl: false,
         zoomControl: false,
         fadeAnimation: false,
         zoomAnimation: false,
-      }).setView([this.initLat, this.initLng], this.zoom);
+      }).setView([this.lat, this.lng], this.zoom);
 
-      L.tileLayer(
-        "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        { maxZoom: 20, maxNativeZoom: 19 }
-      ).addTo(this.map);
-
-      L.marker([this.initLat, this.initLng]).addTo(this.map);
+      L.tileLayer(process.env.VUE_APP_LEAFLET_MAP, { maxZoom: 20, maxNativeZoom: 19}).addTo(this.map);
+      L.marker([this.lat, this.lng]).addTo(this.map);
 
       this.map.on("zoomend", function (e) {
         localStorage.setItem("zoom", e.target._zoom);
       });
 
-      if ( _finalObject && _finalObject.shape != null && _finalObject.shape.length > 0 ) {
+      if (_finalObject && _finalObject.shape != null && _finalObject.shape.length > 0 ) {
         _finalObject.shape.map((shp, shpIndex) => {
           shp.path.map((path, pathIndex) => {
             //  create a polyline
@@ -152,12 +141,11 @@ export default {
       ) {
         shp.path.splice(pathIndex, 1);
         shp.path.length === 0 && _finalObject.shape.splice(shpIndex, 1);
-
         this.polyData.map((polyD, ind) => {
           polyD.map((plData, j) => {
-            if ( plData[0] == e.sourceTarget._latlngs[1].lat && plData[1] == e.sourceTarget._latlngs[1].lng ) {
+            if (plData[0] == e.sourceTarget._latlngs[1].lat && plData[1] == e.sourceTarget._latlngs[1].lng) {
               this.polyData.splice(ind, 1);
-              if ( _finalObject.shape[shpIndex] && _finalObject.shape[shpIndex].area ) {
+              if(_finalObject.shape[shpIndex] && _finalObject.shape[shpIndex].area) {
                 _finalObject.totalArea = parseFloat((_finalObject.totalArea - _finalObject.shape[shpIndex].area).toFixed(2));
                 _finalObject.shape[shpIndex].area = 0;
               }

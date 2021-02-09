@@ -1,13 +1,18 @@
 <template>
   <div>
-    <input name="search" id="searchBox" placeholder="Search place" @click.prevent="handleInput" />
+    <input
+      name="search"
+      id="searchBox"
+      placeholder="Search place"
+      @click.prevent="handleInput"
+    />
     <div id="map"></div>
   </div>
 </template>
 
 <script>
 import $ from "jquery";
-import { drawShapefunction } from "../../../shared/shared";
+import { drawShapefunction, initLat, initLng,initZoom } from "../../../shared/shared";
 
 export default {
   name: "LeafletMap",
@@ -27,22 +32,22 @@ export default {
     initMap() {
       let vueInstance = this;
       var zoom = localStorage.getItem("zoom");
-      var initLatLng = JSON.parse(localStorage.getItem("initLatLng"));
+      var latlng = JSON.parse(localStorage.getItem("initLatLng"));
 
-      var _finalObject = JSON.parse( JSON.stringify(JSON.parse(localStorage.getItem("finalObject"))));
+      var _finalObject = JSON.parse(JSON.stringify(JSON.parse(localStorage.getItem("finalObject"))));
       //Load map
       this.map = L.map("map").setView(
         [
-          initLatLng != null ? initLatLng.lat : -41.2858,
-          initLatLng != null ? initLatLng.lng : 174.78682,
+          latlng != null ? latlng.lat : initLat,
+          latlng != null ? latlng.lng : initLng,
         ],
-        zoom ? zoom : 16
+        zoom ? zoom : initZoom
       );
 
-      L.tileLayer(
-        "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        { maxZoom: 20, maxNativeZoom: 19 }
-      ).addTo(this.map);
+      L.tileLayer(process.env.VUE_APP_LEAFLET_MAP, {
+        maxZoom: 20,
+        maxNativeZoom: 19,
+      }).addTo(this.map);
 
       delete L.Icon.Default.prototype._getIconUrl;
 
@@ -52,7 +57,10 @@ export default {
         shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
       });
 
-      L.marker([ initLatLng != null ? initLatLng.lat : -41.2858, initLatLng != null ? initLatLng.lng : 174.78682, ]).addTo(this.map);
+      L.marker([
+        latlng != null ? latlng.lat :initLat,
+        latlng != null ? latlng.lng : initLng,
+      ]).addTo(this.map);
 
       var Ruler = L.Control.LinearMeasurement.extend({
         // layerSelected: function (e) {
@@ -70,8 +78,7 @@ export default {
       );
 
       //to get address of current latlng
-      $.get(
-        "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=-41.2858&lon=174.78682",
+      $.get( `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${initLat}&lon=${initLng}`,
         (data) => {
           //set address in finalObject
           vueInstance.setAddress(data.address.road);
@@ -115,7 +122,7 @@ export default {
           //set address in finalObject
           vueInstance.setAddress(place.formatted_address);
           setTimeout(() => {
-            localStorage.setItem( "initLatLng", JSON.stringify(place.geometry.location) );
+            localStorage.setItem("initLatLng", JSON.stringify(place.geometry.location) );
           }, 100);
 
           delete L.Icon.Default.prototype._getIconUrl;
@@ -126,7 +133,7 @@ export default {
             shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
           });
           // Create a marker for each place.
-          var marker = L.marker([ place.geometry.location.lat(), place.geometry.location.lng(), ]);
+          var marker = L.marker([place.geometry.location.lat(), place.geometry.location.lng(), ]);
           group.addLayer(marker);
         });
 
@@ -135,7 +142,7 @@ export default {
       });
       this.map.on("zoomend", function (e) {
         localStorage.setItem("zoom", e.target._zoom);
-        localStorage.setItem( "initLatLng", JSON.stringify(e.sourceTarget._animateToCenter) );
+        localStorage.setItem("initLatLng", JSON.stringify(e.sourceTarget._animateToCenter))
       });
       if (_finalObject && _finalObject.shape && _finalObject.shape.length > 0) {
         //Draw shape
@@ -166,19 +173,6 @@ export default {
 };
 </script>
 <style>
-h1 {
-  font-weight: 300;
-  font-size: 2em;
-  margin-top: -0.75em;
-  padding: 0;
-  color: #777;
-  text-align: center;
-  font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-
 #map {
   height: calc(100% - 65px);
 }

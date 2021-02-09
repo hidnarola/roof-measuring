@@ -3,7 +3,12 @@
     <button
       @click="handlePdf"
       class="download-pdf-btn"
-      :disabled="(polyData && polyData.length > 0) || (finalObject && finalObject.shape && finalObject.shape.length > 0) ? false : true"
+      :disabled="
+        (polyData && polyData.length > 0) ||
+        (finalObject && finalObject.shape && finalObject.shape.length > 0)
+          ? false
+          : true
+      "
     >
       Download Pdf
     </button>
@@ -15,7 +20,13 @@
 <script>
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
-import { drawShapefunction } from "../../../shared/shared";
+import {
+  drawShapefunction,
+  initLat,
+  initLng,
+  initZoom,
+  imageUrl,
+} from "../../../shared/shared";
 
 export default {
   name: "LeafletMap",
@@ -24,9 +35,9 @@ export default {
       finalObject: null,
       selectedColor: null,
       map: null,
-      initLat: -41.2858,
-      initLng: 174.78682,
-      zoom: 16,
+      lat: initLat,
+      lng: initLng,
+      zoom: initZoom,
       imgElement: null,
       polyData: [],
       totalArea: 0,
@@ -43,30 +54,26 @@ export default {
       var _finalObject = JSON.parse(
         JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
       );
-      this.zoom = JSON.parse(localStorage.getItem("zoom")) || 16;
+      this.zoom = JSON.parse(localStorage.getItem("zoom")) || initZoom;
+      var initLatLng = JSON.parse(localStorage.getItem("initLatLng"));
 
-      var initLatLng =
-        (localStorage.getItem("initLatLng") != null ||
-          localStorage.getItem("initLatLng") != undefined) &&
-        JSON.parse(localStorage.getItem("initLatLng"));
-
-      this.initLat = (initLatLng && initLatLng.lat) || -41.2858;
-      this.initLng = (initLatLng && initLatLng.lng) || 174.78682;
+      this.lat = (initLatLng && initLatLng.lat) || initLat;
+      this.lng = (initLatLng && initLatLng.lng) || initLng;
 
       this.map = L.map("myMap", {
         attributionControl: false,
         zoomControl: false,
         fadeAnimation: false,
         zoomAnimation: false,
-      }).setView([this.initLat, this.initLng], this.zoom);
+      }).setView([this.lat, this.lng], this.zoom);
       // this.map.doubleClickZoom.disable();
       // this.map.scrollWheelZoom.disable();
-      this.tileLayerData = L.tileLayer(
-        "http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        { maxZoom: 20, maxNativeZoom: 19 }
-      ).addTo(this.map);
+      this.tileLayerData = L.tileLayer(process.env.VUE_APP_LEAFLET_MAP, {
+        maxZoom: 20,
+        maxNativeZoom: 19,
+      }).addTo(this.map);
 
-      L.marker([this.initLat, this.initLng]).addTo(this.map);
+      L.marker([this.lat, this.lng]).addTo(this.map);
 
       this.polyData = JSON.parse(localStorage.getItem("polygon")) || [];
 
@@ -78,7 +85,7 @@ export default {
             shape[0][0] == shape[shape.length - 1][0] &&
             shape[0][1] == shape[shape.length - 1][1]
           ) {
-            var polygon = L.polygon([shape], {
+            L.polygon([shape], {
               showMeasurements: true,
               // measurementOptions: { imperial: true },
               color: "Blue",
@@ -264,11 +271,8 @@ export default {
         50
       );
       //place image
-      let placeImage = `https://maps.googleapis.com/maps/api/staticmap?center=${this.initLat},${this.initLng}&zoom=17&scale=1&size=600x300&maptype=satellite&format=png&visual_refresh=true&key=${process.env.VUE_APP_MAP_ID}`;
-
-      doc.addImage(placeImage, "PNG", 20, 60, 170, 150);
-
-      // ------------- Building Location place with shape image
+      doc.addImage(await imageUrl(this.lat, this.lng, false), "PNG", 20, 60, 170, 150)
+      // ------------- Building Location place image -----------
       doc.addPage();
       header();
       footer();
@@ -279,16 +283,23 @@ export default {
       doc.setTextColor("Gray");
       doc.text(_printData && _printData.address, 20, 30);
 
-      let imgUrl = `https://maps.googleapis.com/maps/api/staticmap?zoom=17&size=600x300&maptype=satellite&markers=color:blue%7Clabel:S%7C${this.initLat},${this.initLng}&key=${process.env.VUE_APP_MAP_ID}`;
+      // let imgUrl = `https://maps.googleapis.com/maps/api/staticmap?zoom=17&size=600x300&maptype=satellite&markers=color:blue%7Clabel:S%7C${this.lat},${this.lng}&key=${process.env.VUE_APP_MAP_ID}`;
 
-      doc.addImage(imgUrl, "PNG", 20, 40, 170, 150);
-      // ------------- Place with shape image
+      doc.addImage(
+        await imageUrl(this.lat, this.lng, true),
+        "PNG",
+        20,
+        40,
+        170,
+        150
+      );
+      // ------------- Place image with shape
       doc.addPage();
       header();
       footer();
       doc.setFontSize(16);
       doc.setTextColor("#259ad7");
-      doc.text(10, 20, "Building Location");
+      doc.text(10, 20, "Building Location with shape");
       doc.setFontSize(12);
       doc.setTextColor("Gray");
       doc.text(_printData && _printData.address, 20, 30);
@@ -386,7 +397,7 @@ export default {
           }
         }
       });
-      // ---------All Shape Structures Summary-------
+      // --------- All Shape Structures Summary -------
       doc.addPage();
       context.clearRect(0, 0, context.canvas.width, context.canvas.height);
       header();
