@@ -267,19 +267,19 @@ export default {
         }
       });
       //update measurements for all shape line's color
-      _finalObject.shape.map((testShape) => {
-        testShape.type &&
-          Object.keys(testShape.type).map((key, index) => {
+      _finalObject.shape.map((shape) => {
+        shape.type &&
+          Object.keys(shape.type).map((key, index) => {
             if (measurement && measurement[key] != null) {
-              measurement[key].length += testShape.type[key].length;
+              measurement[key].length += shape.type[key].length;
             } else {
               measurement = {
                 ...measurement,
                 [key]: {
-                  label: testShape.type[key].label,
-                  color: testShape.type[key].color,
-                  length: testShape.type[key].length,
-                  unit: testShape.type[key].unit,
+                  label: shape.type[key].label,
+                  color: shape.type[key].color,
+                  length: shape.type[key].length,
+                  unit: shape.type[key].unit,
                 },
               };
             }
