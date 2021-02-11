@@ -4,7 +4,16 @@
     <div v-if="isOpenModel" class="confirmation_popup">
       <div class="confirmation_body">
         <span class="pop-close" @click="handleModal">
-          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 329 329" style="enable-background: new 0 0 329 329" xml:space="preserve" >
+          <svg
+            version="1.1"
+            xmlns="http://www.w3.org/2000/svg"
+            xmlns:xlink="http://www.w3.org/1999/xlink"
+            x="0px"
+            y="0px"
+            viewBox="0 0 329 329"
+            style="enable-background: new 0 0 329 329"
+            xml:space="preserve"
+          >
             <path
               d="M194.6,164.5L322.7,36.4c8.3-8.3,8.3-21.8,0-30.1c-8.3-8.3-21.8-8.3-30.1,0L164.5,134.4L36.4,6.2c-8.3-8.3-21.8-8.3-30.1,0 c-8.3,8.3-8.3,21.8,0,30.1l128.1,128.1L6.3,292.6c-8.3,8.3-8.3,21.8,0,30.1c4.2,4.2,9.6,6.2,15.1,6.2s10.9-2.1,15.1-6.2l128.1-128.1 	l128.1,128.1c4.2,4.2,9.6,6.2,15.1,6.2c5.5,0,10.9-2.1,15.1-6.2c8.3-8.3,8.3-21.8,0-30.1L194.6,164.5z"
             /></svg
@@ -13,7 +22,9 @@
         <p>Are you sure you want to delete all edges?</p>
         <div class="btn-wrap">
           <button class="btn btn-trans" @click="handleModal">Cancel</button>
-          <button class="btn btn-blue" @click="handleRemoveAll()"> Delete all edges </button>
+          <button class="btn btn-blue" @click="handleRemoveAll()">
+            Delete all edges
+          </button>
         </div>
       </div>
     </div>
@@ -21,16 +32,23 @@
     <div id="colorSelection">
       <p>Edges tool</p>
       <div v-for="(display, idx) in colors" :key="idx">
-        <div @click="handleColor(display.color, display.label)" class="name">
-          <span class="colorbox" :class="['bg-' + display.color]"></span>
+        <div
+          @click="handleColor(display.backgroundColor, display.label)"
+          class="name"
+        >
+          <span class="colorbox" :class="['bg-' + display.label]"></span>
           {{ display.label }}
         </div>
       </div>
       <div class="name">
-        <button @click="handleRemove()" class="delete cm-btn"> Delete Edge </button>
+        <button @click="handleRemove()" class="delete cm-btn">
+          Delete Edge
+        </button>
       </div>
       <div class="name">
-        <button @click="handleModal" class="delete cm-btn"> Delete All Edges </button>
+        <button @click="handleModal" class="delete cm-btn">
+          Delete All Edges
+        </button>
       </div>
     </div>
   </div>
@@ -38,18 +56,18 @@
 
 <script>
 import _ from "lodash";
-import {  initLat, initLng ,initZoom} from "../../../shared/shared";
+import { initLat, initLng, initZoom } from "../../../shared/shared";
 export default {
   name: "LeafletMap",
   data() {
     return {
       colors: [
-        { label: "Eaves", backgroundColor: "#F4A460", color: "SandyBrown" },
-        { label: "Valleys", backgroundColor: "#FFFF00", color: "Yellow" },
-        { label: "Hips", backgroundColor: "#FA8072", color: "Salmon" },
-        { label: "Ridges", backgroundColor: "#FFA500", color: "Orange" },
-        { label: "Rakes", backgroundColor: "#008000", color: "Green" },
-        { label: "Unspecified", backgroundColor: "#1e0fff", color: "Blue" },
+        { label: "Eaves", backgroundColor: "#71bf82" },
+        { label: "Valleys", backgroundColor: "#f0512e" },
+        { label: "Hips", backgroundColor: "#9368b7" },
+        { label: "Ridges", backgroundColor: "#d0efb1" },
+        { label: "Rakes", backgroundColor: "#ffcc0f" },
+        { label: "Unspecified", backgroundColor: "#1e0fff" },
       ],
       selectedColor: null,
       selectedLabel: null,
@@ -57,7 +75,7 @@ export default {
       enableColor: false,
       isOpenModel: false,
       map: null,
-      lat:initLat,
+      lat: initLat,
       lng: initLng,
       zoom: initZoom,
       polyData: [],
@@ -69,10 +87,14 @@ export default {
   methods: {
     initMap() {
       var vueInstance = this;
-      var _finalObject = JSON.parse(JSON.stringify(JSON.parse(localStorage.getItem("finalObject"))));
+      var _finalObject = JSON.parse(
+        JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
+      );
       this.zoom = localStorage.getItem("zoom") || initZoom;
       var initLatLng = JSON.parse(localStorage.getItem("initLatLng"));
-      this.polyData = JSON.parse(JSON.stringify(JSON.parse(localStorage.getItem("polygon"))));
+      this.polyData = JSON.parse(
+        JSON.stringify(JSON.parse(localStorage.getItem("polygon")))
+      );
 
       this.lat = (initLatLng && initLatLng.lat) || initLat;
       this.lng = (initLatLng && initLatLng.lng) || initLng;
@@ -84,14 +106,15 @@ export default {
         zoomAnimation: false,
       }).setView([this.lat, this.lng], this.zoom);
 
-      L.tileLayer(process.env.VUE_APP_LEAFLET_MAP, { maxZoom: 20, maxNativeZoom: 19}).addTo(this.map);
+      L.tileLayer(process.env.VUE_APP_LEAFLET_MAP,
+      { maxZoom: 20, maxNativeZoom: 19, }).addTo(this.map);
       L.marker([this.lat, this.lng]).addTo(this.map);
 
       this.map.on("zoomend", function (e) {
         localStorage.setItem("zoom", e.target._zoom);
       });
 
-      if (_finalObject && _finalObject.shape != null && _finalObject.shape.length > 0 ) {
+      if ( _finalObject && _finalObject.shape != null && _finalObject.shape.length > 0 ) {
         _finalObject.shape.map((shp, shpIndex) => {
           shp.path.map((path, pathIndex) => {
             //  create a polyline
@@ -117,13 +140,15 @@ export default {
               center: true,
               attributes: { fill: "yellow" },
             });
+
+            this.updateLineColor(shp, _finalObject);
             poly.on("click", function (e) {
               if (vueInstance.enableColor) {
                 //Color change code
                 vueInstance.colorPolyline(shp, path, e, _finalObject);
               } else if (vueInstance.enableDelete) {
                 // Delete line code
-                vueInstance.deletePolyline(shp, pathIndex, shpIndex, path, e, _finalObject );
+                vueInstance.deletePolyline(shp, pathIndex, shpIndex, path, e, _finalObject);
               }
             });
             _finalObject.totalFacets = this.polyData.length;
@@ -143,10 +168,10 @@ export default {
         shp.path.length === 0 && _finalObject.shape.splice(shpIndex, 1);
         this.polyData.map((polyD, ind) => {
           polyD.map((plData, j) => {
-            if (plData[0] == e.sourceTarget._latlngs[1].lat && plData[1] == e.sourceTarget._latlngs[1].lng) {
+            if ( plData[0] == e.sourceTarget._latlngs[1].lat && plData[1] == e.sourceTarget._latlngs[1].lng ) {
               this.polyData.splice(ind, 1);
-              if(_finalObject.shape[shpIndex] && _finalObject.shape[shpIndex].area) {
-                _finalObject.totalArea = parseFloat((_finalObject.totalArea - _finalObject.shape[shpIndex].area).toFixed(2));
+              if ( _finalObject.shape[shpIndex] && _finalObject.shape[shpIndex].area ) {
+                _finalObject.totalArea = parseFloat(( _finalObject.totalArea - _finalObject.shape[shpIndex].area ).toFixed(2));
                 _finalObject.shape[shpIndex].area = 0;
               }
             }
@@ -159,7 +184,7 @@ export default {
             delete shp.type[path[0].label];
           }
         }
-        if (_finalObject.measurement && _finalObject.measurement.hasOwnProperty(path[0].label)) {
+        if (_finalObject.measurement && _finalObject.measurement.hasOwnProperty(path[0].label) ) {
           _finalObject.measurement[path[0].label].length -= len;
           if (_finalObject.measurement[path[0].label].length <= 0) {
             delete _finalObject.measurement[path[0].label];
@@ -180,46 +205,12 @@ export default {
       ) {
         path.map((p) => {
           p.color = this.selectedColor;
-          p.isColorChanged = true;
           p.label = this.selectedLabel;
         });
+
         e.sourceTarget.setStyle({ color: this.selectedColor });
       }
-      let unit = path[0].length.split(" ").pop();
-      let length = parseFloat(path[0].length.split(" ")[0]);
-
-      var type = shp.type || null;
-      if (type && type[path[0].label] != undefined) {
-        type[path[0].label].length += length;
-      } else {
-        type = {
-          ...type,
-          [path[0].label]: {
-            length: length,
-            label: path[0].label,
-            color: path[0].color,
-            unit,
-          },
-        };
-        shp.type = type;
-      }
-
-      let _length = parseFloat(path[0].length.split(" ", 1).pop());
-      let _unit = path[0].length.split(" ").pop();
-      //measurement update
-      if (_finalObject.measurement && _finalObject.measurement[path[0].label]) {
-        _finalObject.measurement[path[0].label].length += _length;
-      } else {
-        _finalObject.measurement = {
-          ..._finalObject.measurement,
-          [path[0].label]: {
-            label: path[0].label,
-            color: path[0].color,
-            length: _length,
-            unit: _unit,
-          },
-        };
-      }
+      this.updateLineColor(shp, _finalObject);
       localStorage.setItem("finalObject", JSON.stringify(_finalObject));
     },
     handleColor(color, label) {
@@ -249,8 +240,52 @@ export default {
         this.isOpenModel = true;
       }
     },
-    drawShape(map, _finalObject, selectedColor, totalFacets, isEdges, isFacets) {
-      drawShapefunction(map, _finalObject, selectedColor, totalFacets, isEdges, isFacets);
+    drawShape( map, _finalObject, selectedColor, totalFacets, isEdges, isFacets ) {
+      drawShapefunction(map, _finalObject, selectedColor, totalFacets, isEdges, isFacets );
+    },
+    updateLineColor(shp, _finalObject) {
+      var type = null, measurement = null;
+
+      shp.path.map((pathPoint, pathPointIndex) => {
+        if (pathPointIndex == 0) return;
+        let unit = pathPoint[0].length.split(" ").pop();
+        let length = parseFloat(pathPoint[0].length.split(" ")[0]);
+        //Shape's type object update - type handeling lines color
+        if ( type && type[pathPoint[0].label] != null && pathPoint[0].label == type[pathPoint[0].label].label ) {
+          type[pathPoint[0].label].length += length;
+        } else {
+          type = {
+            ...type,
+            [pathPoint[0].label]: {
+              length: length,
+              label: pathPoint[0].label,
+              color: pathPoint[0].color,
+              unit,
+            },
+          };
+          shp.type = type;
+        }
+      });
+      //update measurements for all shape line's color
+      _finalObject.shape.map((testShape) => {
+        testShape.type &&
+          Object.keys(testShape.type).map((key, index) => {
+            if (measurement && measurement[key] != null) {
+              measurement[key].length += testShape.type[key].length;
+            } else {
+              measurement = {
+                ...measurement,
+                [key]: {
+                  label: testShape.type[key].label,
+                  color: testShape.type[key].color,
+                  length: testShape.type[key].length,
+                  unit: testShape.type[key].unit,
+                },
+              };
+            }
+          });
+        _finalObject.measurement = measurement;
+      });
     },
   },
 };

@@ -37,7 +37,7 @@ export const imageUrl = async (lat, lng, isMarker) => {
     if (isMarker) {
         return `https://maps.googleapis.com/maps/api/staticmap?zoom=17&size=600x300&maptype=satellite&markers=color:blue%7Clabel:S%7C${lat},${lng}&key=${process.env.VUE_APP_MAP_ID}`
     } else {
-        return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=17&scale=1&size=600x300&maptype=satellite&format=png&visual_refresh=true&key=${process.env.VUE_APP_MAP_ID}`
+        return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=19&scale=1&size=600x300&maptype=satellite&format=png&visual_refresh=true&key=${process.env.VUE_APP_MAP_ID}`
     }
 }
 export const initLat = -41.2858;

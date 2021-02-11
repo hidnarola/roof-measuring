@@ -596,9 +596,7 @@
                     for (var s in multi_latlngs) {
                         // dimension += this.displayMarkers.apply(this, [multi_latlngs[s], true, dimension]);
                     }
-
                     // this.displayMarkers.apply(this, [this.poly.getLatLngs(), false, this.sum]);
-
                     /* Review that the dots are in correct units */
                     this.convertDots();
                 } else {
@@ -612,10 +610,8 @@
             var azimut = '',
                 me = this;
             // ------------------- latlng for draw ------------
-            var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [], totalArea: 0 }
-
+            var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [], totalArea: 0}
             var shapes = finalObject.shape || []
-
             // to make same first and end point create tempArray
             var tempArray = []
             var tmpo = JSON.parse(JSON.stringify(me.latlngsList))
@@ -624,29 +620,26 @@
                 tempArray.push((tmpo)[tmpo.length - 1][1], JSON.parse(JSON.stringify(e.latlng)))
                 tmpo.push(tempArray)
             }
-
             if (finalObject && finalObject.shape && finalObject.shape.length < 0) {
                 finalObject.shape = shapes
             } else {
                 shapes.push({ path: tmpo, area: 0, unit: "m²" })
                 finalObject.shape = shapes
             }
-
             // Set out the finalObject
             finalObject.shape.length > 0 && finalObject.shape.map(poly => {
                 poly.path.map(pl => {
                     pl.map(p => {
                         if (!p.hasOwnProperty("color") && !p.hasOwnProperty("length") && !p.hasOwnProperty("label")) {
                             {
-                                p.color = "Blue", p.length = `${0} m`, p.label = "Unspecified"
+                                p.color = "#1e0fff", p.length = `${0} m`, p.label = "Unspecified"
                             }
                         }
                     })
                 })
             })
-            const polygon = JSON.parse(localStorage.getItem("polygon")) || []
-
             //Update the finalObject as per the polygon for complete shapes(first and last point same)
+            const polygon = JSON.parse(localStorage.getItem("polygon")) || []
 
             finalObject.shape.length > 0 && finalObject.shape.map((shape, shapeIndex) => {
                 shape.path.map((shapePath, shapePathIndex) => {

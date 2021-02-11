@@ -79,8 +79,7 @@ export default {
           if (shape[0][0] == shape[shape.length - 1][0] && shape[0][1] == shape[shape.length - 1][1]) {
             L.polygon([shape], {
               showMeasurements: true,
-              // measurementOptions: { imperial: true },
-              color: "Blue",
+              color: "#1e0fff",
               dashArray: "5 5",
               lineCap: "round",
               weight: 0,
@@ -151,9 +150,7 @@ export default {
       //PDF data
       await this.createMapImage();
       const doc = new jsPDF();
-
       doc.page = 1; // use this as a counter.
-
       function footer() {
         //Footer
         doc.setFontSize(10);
@@ -240,18 +237,6 @@ export default {
       doc.setTextColor("Gray");
       doc.text(_printData && _printData.address, 20, 30);
       doc.addImage( await imageUrl(this.lat, this.lng, true), "PNG", 20, 40, 170, 150 );
-      // ------------- Place image with shape
-      doc.addPage();
-      header();
-      footer();
-      doc.setFontSize(16);
-      doc.setTextColor("#259ad7");
-      doc.text(10, 20, "Building Location with shape");
-      doc.setFontSize(12);
-      doc.setTextColor("Gray");
-      doc.text(_printData && _printData.address, 20, 30);
-
-      doc.addImage(this.imgElement, "PNG", 20, 40, 170, 150);
 
       // --------------- Length Measurement Report--------------------
       doc.addPage();
