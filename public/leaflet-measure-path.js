@@ -90,13 +90,14 @@
             sqfeet;
 
         if (this._measurementOptions.imperial) {
-            if (a > 404.685642) {
-                a = a / 4046.85642;
-                unit = 'ac';
-            } else {
-                a = a / 0.09290304;
-                unit = 'ft²';
-            }
+            // if (a > 404.685642) {
+            //     a = a / 4046.85642;
+            //     unit = 'ac';
+            // } else {
+            a = a / 0.09290304;
+            unit = 'sqft';
+            // unit = 'ft²';
+            // }
         } else if (this._measurementOptions.ha) {
             if (a > 1000000000) {
                 a = a / 1000000000;

@@ -12,7 +12,12 @@
 
 <script>
 import $ from "jquery";
-import { drawShapefunction, initLat, initLng,initZoom } from "../../../shared/shared";
+import {
+  drawShapefunction,
+  initLat,
+  initLng,
+  initZoom,
+} from "../../../shared/shared";
 
 export default {
   name: "LeafletMap",
@@ -34,7 +39,9 @@ export default {
       var zoom = localStorage.getItem("zoom");
       var latlng = JSON.parse(localStorage.getItem("initLatLng"));
 
-      var _finalObject = JSON.parse(JSON.stringify(JSON.parse(localStorage.getItem("finalObject"))));
+      var _finalObject = JSON.parse(
+        JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
+      );
       //Load map
       this.map = L.map("map").setView(
         [
@@ -58,7 +65,7 @@ export default {
       });
 
       L.marker([
-        latlng != null ? latlng.lat :initLat,
+        latlng != null ? latlng.lat : initLat,
         latlng != null ? latlng.lng : initLng,
       ]).addTo(this.map);
 
@@ -69,16 +76,20 @@ export default {
 
       this.map.addControl(
         new Ruler({
-          unitSystem: "metric",
+          unitSystem: "imperial",
+          // unitSystem: "metric",
           color: "#1e0fff",
           opacity: 0,
           dashArray: [0, 0],
           dashArrayOptions: [],
         })
       );
+      // let mapTest = JSON.parse(JSON.stringify(this.map));
+      // localStorage.setItem("map", mapTest);
 
       //to get address of current latlng
-      $.get( `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${initLat}&lon=${initLng}`,
+      $.get(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${initLat}&lon=${initLng}`,
         (data) => {
           //set address in finalObject
           vueInstance.setAddress(data.address.road);
@@ -122,7 +133,10 @@ export default {
           //set address in finalObject
           vueInstance.setAddress(place.formatted_address);
           setTimeout(() => {
-            localStorage.setItem("initLatLng", JSON.stringify(place.geometry.location) );
+            localStorage.setItem(
+              "initLatLng",
+              JSON.stringify(place.geometry.location)
+            );
           }, 100);
 
           delete L.Icon.Default.prototype._getIconUrl;
@@ -133,7 +147,10 @@ export default {
             shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
           });
           // Create a marker for each place.
-          var marker = L.marker([place.geometry.location.lat(), place.geometry.location.lng(), ]);
+          var marker = L.marker([
+            place.geometry.location.lat(),
+            place.geometry.location.lng(),
+          ]);
           group.addLayer(marker);
         });
 
@@ -142,7 +159,10 @@ export default {
       });
       this.map.on("zoomend", function (e) {
         localStorage.setItem("zoom", e.target._zoom);
-        localStorage.setItem("initLatLng", JSON.stringify(e.sourceTarget._animateToCenter))
+        localStorage.setItem(
+          "initLatLng",
+          JSON.stringify(e.sourceTarget._animateToCenter)
+        );
       });
       if (_finalObject && _finalObject.shape && _finalObject.shape.length > 0) {
         //Draw shape

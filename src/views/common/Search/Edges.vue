@@ -106,15 +106,21 @@ export default {
         zoomAnimation: false,
       }).setView([this.lat, this.lng], this.zoom);
 
-      L.tileLayer(process.env.VUE_APP_LEAFLET_MAP,
-      { maxZoom: 20, maxNativeZoom: 19, }).addTo(this.map);
+      L.tileLayer(process.env.VUE_APP_LEAFLET_MAP, {
+        maxZoom: 20,
+        maxNativeZoom: 19,
+      }).addTo(this.map);
       L.marker([this.lat, this.lng]).addTo(this.map);
 
       this.map.on("zoomend", function (e) {
         localStorage.setItem("zoom", e.target._zoom);
       });
 
-      if ( _finalObject && _finalObject.shape != null && _finalObject.shape.length > 0 ) {
+      if (
+        _finalObject &&
+        _finalObject.shape != null &&
+        _finalObject.shape.length > 0
+      ) {
         _finalObject.shape.map((shp, shpIndex) => {
           shp.path.map((path, pathIndex) => {
             //  create a polyline
@@ -133,10 +139,15 @@ export default {
               path[1].lng,
             ]);
 
-            path[0]["length"] = `${distance.toFixed(1)} m`;
-            path[1]["length"] = `${distance.toFixed(1)} m`;
+            // path[0]["length"] = `${distance.toFixed(1)} m`;
+            // path[1]["length"] = `${distance.toFixed(1)} m`;
 
-            poly.setText(`${distance.toFixed(1)} m`, {
+            var feet = (distance.toFixed(4) * 3.2808).toFixed(2);
+
+            path[0]["length"] = `${feet} ft`;
+            path[1]["length"] = `${feet} ft`;
+
+            poly.setText(`${feet} ft`, {
               center: true,
               attributes: { fill: "yellow" },
             });
@@ -148,7 +159,14 @@ export default {
                 vueInstance.colorPolyline(shp, path, e, _finalObject);
               } else if (vueInstance.enableDelete) {
                 // Delete line code
-                vueInstance.deletePolyline(shp, pathIndex, shpIndex, path, e, _finalObject);
+                vueInstance.deletePolyline(
+                  shp,
+                  pathIndex,
+                  shpIndex,
+                  path,
+                  e,
+                  _finalObject
+                );
               }
             });
             _finalObject.totalFacets = this.polyData.length;
@@ -168,10 +186,20 @@ export default {
         shp.path.length === 0 && _finalObject.shape.splice(shpIndex, 1);
         this.polyData.map((polyD, ind) => {
           polyD.map((plData, j) => {
-            if ( plData[0] == e.sourceTarget._latlngs[1].lat && plData[1] == e.sourceTarget._latlngs[1].lng ) {
+            if (
+              plData[0] == e.sourceTarget._latlngs[1].lat &&
+              plData[1] == e.sourceTarget._latlngs[1].lng
+            ) {
               this.polyData.splice(ind, 1);
-              if ( _finalObject.shape[shpIndex] && _finalObject.shape[shpIndex].area ) {
-                _finalObject.totalArea = parseFloat(( _finalObject.totalArea - _finalObject.shape[shpIndex].area ).toFixed(2));
+              if (
+                _finalObject.shape[shpIndex] &&
+                _finalObject.shape[shpIndex].area
+              ) {
+                _finalObject.totalArea = parseFloat(
+                  (
+                    _finalObject.totalArea - _finalObject.shape[shpIndex].area
+                  ).toFixed(2)
+                );
                 _finalObject.shape[shpIndex].area = 0;
               }
             }
@@ -184,7 +212,10 @@ export default {
             delete shp.type[path[0].label];
           }
         }
-        if (_finalObject.measurement && _finalObject.measurement.hasOwnProperty(path[0].label) ) {
+        if (
+          _finalObject.measurement &&
+          _finalObject.measurement.hasOwnProperty(path[0].label)
+        ) {
           _finalObject.measurement[path[0].label].length -= len;
           if (_finalObject.measurement[path[0].label].length <= 0) {
             delete _finalObject.measurement[path[0].label];
@@ -240,18 +271,37 @@ export default {
         this.isOpenModel = true;
       }
     },
-    drawShape( map, _finalObject, selectedColor, totalFacets, isEdges, isFacets ) {
-      drawShapefunction(map, _finalObject, selectedColor, totalFacets, isEdges, isFacets );
+    drawShape(
+      map,
+      _finalObject,
+      selectedColor,
+      totalFacets,
+      isEdges,
+      isFacets
+    ) {
+      drawShapefunction(
+        map,
+        _finalObject,
+        selectedColor,
+        totalFacets,
+        isEdges,
+        isFacets
+      );
     },
     updateLineColor(shp, _finalObject) {
-      var type = null, measurement = null;
+      var type = null,
+        measurement = null;
 
       shp.path.map((pathPoint, pathPointIndex) => {
         if (pathPointIndex == 0) return;
         let unit = pathPoint[0].length.split(" ").pop();
         let length = parseFloat(pathPoint[0].length.split(" ")[0]);
         //Shape's type object update - type handeling lines color
-        if ( type && type[pathPoint[0].label] != null && pathPoint[0].label == type[pathPoint[0].label].label ) {
+        if (
+          type &&
+          type[pathPoint[0].label] != null &&
+          pathPoint[0].label == type[pathPoint[0].label].label
+        ) {
           type[pathPoint[0].label].length += length;
         } else {
           type = {
