@@ -186,20 +186,10 @@ export default {
         shp.path.length === 0 && _finalObject.shape.splice(shpIndex, 1);
         this.polyData.map((polyD, ind) => {
           polyD.map((plData, j) => {
-            if (
-              plData[0] == e.sourceTarget._latlngs[1].lat &&
-              plData[1] == e.sourceTarget._latlngs[1].lng
-            ) {
+            if (plData[0] == e.sourceTarget._latlngs[1].lat && plData[1] == e.sourceTarget._latlngs[1].lng) {
               this.polyData.splice(ind, 1);
-              if (
-                _finalObject.shape[shpIndex] &&
-                _finalObject.shape[shpIndex].area
-              ) {
-                _finalObject.totalArea = parseFloat(
-                  (
-                    _finalObject.totalArea - _finalObject.shape[shpIndex].area
-                  ).toFixed(2)
-                );
+              if (_finalObject.shape[shpIndex] && _finalObject.shape[shpIndex].area) {
+                _finalObject.totalArea = parseFloat((_finalObject.totalArea - _finalObject.shape[shpIndex].area ).toFixed(2));
                 _finalObject.shape[shpIndex].area = 0;
               }
             }
