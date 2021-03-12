@@ -13,7 +13,7 @@
       Download Pdf
     </button>
     <div id="myMap"></div>
-    <canvas id="canvas" width="1500" height="1300"></canvas>
+    <canvas id="canvas" width="1500px" height="1400px"></canvas>
   </div>
 </template>
 
@@ -55,7 +55,7 @@ export default {
       var _finalObject = JSON.parse(
         JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
       );
-      this.zoom = JSON.parse(localStorage.getItem("zoom")) || initZoom;
+      var zoom = localStorage.getItem("zoom");
       var initLatLng = JSON.parse(localStorage.getItem("initLatLng"));
 
       this.lat = (initLatLng && initLatLng.lat) || initLat;
@@ -66,23 +66,30 @@ export default {
         zoomControl: false,
         fadeAnimation: false,
         zoomAnimation: false,
-      }).setView([this.lat, this.lng], this.zoom);
-      // this.map.doubleClickZoom.disable();
-      // this.map.scrollWheelZoom.disable();
+      }).setView([this.lat, this.lng], zoom ? zoom : initZoom);
+
       this.tileLayerData = L.tileLayer(process.env.VUE_APP_LEAFLET_MAP, {
         maxZoom: 20,
         maxNativeZoom: 19,
       }).addTo(this.map);
 
-      L.marker([this.lat, this.lng]).addTo(this.map);
+      let marker;
+      marker = L.marker([this.lat, this.lng], {
+        draggable: true,
+      }).addTo(this.map);
 
+      marker.on("dragend", function (e) {
+        localStorage.setItem(
+          "initLatLng",
+          JSON.stringify(e.target.getLatLng())
+        );
+      });
       this.polyData = JSON.parse(localStorage.getItem("polygon")) || [];
 
       // ----- polygon draw ------
 
       this.polyData &&
         this.polyData.map((shape) => {
-          let pointArray = [];
           if (
             shape[0][0] == shape[shape.length - 1][0] &&
             shape[0][1] == shape[shape.length - 1][1]
@@ -97,15 +104,11 @@ export default {
               measurementOptions: { imperial: true },
             }).addTo(this.map);
           }
-
-          // To keep shape in pdf handle xyPoint
-          shape.map((pth) => {
-            let xy = this.map.latLngToLayerPoint([pth[0], pth[1]]);
-            pointArray.push(xy);
-          });
-          this.xyPoint.push(pointArray);
         });
 
+      this.map.on("zoomend", function (e) {
+        localStorage.setItem("zoom", e.target._zoom);
+      });
       // setting out the area measurements
       this.map.eachLayer((layer) => {
         if (layer._latlngs) {
@@ -170,6 +173,10 @@ export default {
     },
     async handlePdf() {
       //PDF data
+
+      let canvasElement = document.getElementById("canvas");
+      var context = canvasElement.getContext("2d");
+
       await this.createMapImage();
       const doc = new jsPDF();
       doc.setFont("times");
@@ -183,11 +190,7 @@ export default {
           285,
           "Copyright © 2020 Roofmeasurement.com | All rights reserved."
         );
-        doc.text(
-          doc.internal.pageSize.getWidth() - 40,
-          285,
-          "page " + doc.page
-        );
+        doc.text(doc.internal.pageSize.getWidth() - 40, 285, "page " + doc.page);
         doc.page++;
       }
       function header() {
@@ -198,9 +201,6 @@ export default {
         doc.setTextColor("gray");
         doc.text(150, 10, "Powered By Roof Measurement"); //print number bottom right
       }
-
-      let canvasElement = document.getElementById("canvas");
-      var context = canvasElement.getContext("2d");
 
       // Table data start to manage the polyline measurment with colors
       var edgesTable = [];
@@ -217,8 +217,11 @@ export default {
           if (latlng.area != 0) {
             areaTable.push({
               index: `Shape - ${i}`,
-              area: this.numberWithCommas(latlng.area)+ " "+latlng.unit,
-              totalArea: this.numberWithCommas(this.finalObject.totalArea)+ " " +this.finalObject.unit,
+              area: this.numberWithCommas(latlng.area) + " " + latlng.unit,
+              totalArea:
+                this.numberWithCommas(this.finalObject.totalArea) +
+                " " +
+                this.finalObject.unit,
             });
           }
         });
@@ -267,24 +270,10 @@ export default {
       doc.setFontSize(14);
       doc.setTextColor("Gray");
       doc.text(_printData && _printData.address, 15, 65);
-      doc.text(`${_printData.totalFacets} facets`, 188, 70, {
-        maxWidth: 50,
-        align: "right",
-      });
-      doc.text(
-        `${this.numberWithCommas(_printData.totalArea)} ${_printData.unit}`,
-        188,
-        78,
-        { maxWidth: 50, align: "right" }
-      ); //Place image
-      doc.addImage(
-        await imageUrl(this.lat, this.lng, false),
-        "PNG",
-        20,
-        84,
-        170,
-        150
-      );
+      doc.text(`${_printData.totalFacets} facets`, 188, 70, { maxWidth: 50, align: "right", });
+      doc.text( `${this.numberWithCommas(_printData.totalArea)} ${_printData.unit}`, 188, 78, { maxWidth: 50, align: "right" } );
+      //Place image
+      doc.addImage( await imageUrl(this.lat, this.lng, false), "PNG", 20, 84, 170, 150 );
       // ------------- Building Location place image -----------
       doc.addPage();
       header();
@@ -296,7 +285,7 @@ export default {
       doc.setFontSize(11);
       doc.setTextColor("Gray");
       doc.text(_printData && _printData.address, 20, 28);
-      doc.addImage(await imageUrl(this.lat, this.lng, true), "PNG", 20, 40, 170, 150);
+      doc.addImage( await imageUrl(this.lat, this.lng, true), "PNG", 20, 40, 170, 150 );
 
       // --------------- Length Measurement Report--------------------
       doc.addPage();
@@ -329,7 +318,6 @@ export default {
         if (shp.area != 0) {
           // ------------- Structure Summary for particular Shape -----------------
           doc.addPage();
-          context.clearRect(0, 0, context.canvas.width, context.canvas.height);
           header();
           footer();
 
@@ -346,95 +334,46 @@ export default {
           doc.text(`Measurement`, 140, 40);
           doc.setFontSize(13);
           doc.setTextColor("Gray");
-          doc.text(
-            `Total Roof Facets ${
-              _printData.totalFacets / _printData.totalFacets
-            } facets`,
-            140,
-            52
-          );
+          doc.text( `Total Roof Facets ${ _printData.totalFacets / _printData.totalFacets } facets`, 140, 52 );
           // shape add start
-          this.xyPoint.map((xyShape, xyIndex) => {
-            if (xyIndex === i) {
-              context.beginPath();
-              xyShape.map((xyPoint) => {
-                context.strokeStyle = "#259ad7";
-                context.lineWidth = 1.5;
-                context.lineTo(xyPoint.x, xyPoint.y);
-              });
-              context.closePath();
-              context.stroke();
-              let imgData = canvasElement.toDataURL("image/png");
-              const pageWidth = doc.internal.pageSize.getWidth();
-              const pageHeight = doc.internal.pageSize.getHeight();
-              const widthRatio = pageWidth / context.canvas.width;
-              const heightRatio = pageHeight / context.canvas.height;
-              const ratio = widthRatio > heightRatio ? heightRatio : widthRatio;
-              const canvasWidth = context.canvas.width * ratio;
-              const canvasHeight = context.canvas.height * ratio;
 
-              const marginX = (pageWidth - canvasWidth) / 2;
-              const marginY = (pageHeight - canvasHeight) / 2;
-              //shape image
-              doc.addImage(imgData, "PNG", marginX, marginY, canvasWidth, canvasHeight);
-            }
-          });
+          const pageWidth = doc.internal.pageSize.getWidth();
+          const pageHeight = doc.internal.pageSize.getHeight();
+          const widthRatio = pageWidth / context.canvas.width;
+          const heightRatio = pageHeight / context.canvas.height;
+          const ratio = widthRatio > heightRatio ? heightRatio : widthRatio;
+          const canvasWidth = context.canvas.width * ratio;
+          const canvasHeight = context.canvas.height * ratio;
+
           // shape add start
+          this.drawShapeInPdf(context, canvasElement, doc, 20, 40, canvasWidth / 2, canvasHeight / 2, i);
+
           let _EavesRakes = 0, _HipsRidges = 0, _lengthUnit, stayY;
 
           if (shp.type) {
             Object.keys(shp.type).map((key, index) => {
-              doc.text(
-                `Total ${shp.type[key].label}  ${shp.type[key].length.toFixed(
-                  2
-                )} ${shp.type[key].unit}`,
-                140,
-                62 + index * 10
-              );
+              doc.text(`Total ${shp.type[key].label}  ${shp.type[key].length.toFixed( 2 )} ${shp.type[key].unit}`, 140, 62 + index * 10);
               stayY = 62 + index * 10;
               switch (key) {
-                case "Hips":
-                  _HipsRidges += shp.type["Hips"].length;
+                case "Hips": _HipsRidges += shp.type["Hips"].length;
                   break;
-                case "Ridges":
-                  _HipsRidges += shp.type["Ridges"].length;
+                case "Ridges": _HipsRidges += shp.type["Ridges"].length;
                   break;
-                case "Eaves":
-                  _EavesRakes += shp.type["Eaves"].length;
-                  break;
-                case "Rakes":
-                  _EavesRakes += shp.type["Rakes"].length;
-                  break;
-                default:
-                  break;
+                case "Eaves": _EavesRakes += shp.type["Eaves"].length; break;
+                case "Rakes": _EavesRakes += shp.type["Rakes"].length; break;
+                default: break;
               }
-              _lengthUnit =
-                shp.type[key] && shp.type[key].unit && shp.type[key].unit;
+              _lengthUnit = shp.type[key] && shp.type[key].unit && shp.type[key].unit;
             });
-            doc.text(
-              `Hips + Ridges  ${_HipsRidges.toFixed(2)} ${_lengthUnit}`,
-              140,
-              stayY + 10
-            );
-            doc.text(
-              `Eaves + Rakes  ${_EavesRakes.toFixed(2)} ${_lengthUnit}`,
-              140,
-              stayY + 20
-            );
-            doc.text(
-              `Total Roof Area ${
-                this.numberWithCommas(shp.area) + " " + shp.unit
-              }`,
-              140,
-              stayY + 30
-            );
+            doc.text(`Hips + Ridges  ${_HipsRidges.toFixed(2)} ${_lengthUnit}`, 140, stayY + 10);
+            doc.text(`Eaves + Rakes  ${_EavesRakes.toFixed(2)} ${_lengthUnit}`, 140, stayY + 20);
+            doc.text(`Total Roof Area ${ this.numberWithCommas(shp.area) + " " + shp.unit }`, 140, stayY + 30);
           }
         }
       });
 
       // --------- All Shape Structures Summary -------
       doc.addPage();
-      context.clearRect(0, 0, context.canvas.width, context.canvas.height);
       header();
       footer();
       doc.setFontSize(16);
@@ -443,44 +382,8 @@ export default {
       doc.setFontSize(11);
       doc.setTextColor("Gray");
       doc.text(_printData && _printData.address, 20, 28);
-      for (var i = 0; i < this.polyData.length; i++) {
-        this.xyPoint.map((xy) => {
-          context.beginPath();
-          for (var j = 0; j < this.polyData[i].length; j++) {
-            xy.map((pt) => {
-              context.strokeStyle = "#259ad7";
-              context.fillStyle = "#DCDCDC";
-              context.fill();
-              context.lineWidth = 1.5;
-              context.lineTo(pt.x, pt.y);
-            });
-          }
-          context.closePath();
-          context.stroke();
-        });
+      this.drawShapeInPdf(context, canvasElement, doc, 50, 50, 120, 150);
 
-        var imgData = canvasElement.toDataURL("image/png");
-        this.pdfShape = imgData;
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const widthRatio = pageWidth / context.canvas.width;
-        const heightRatio = pageHeight / context.canvas.height;
-        const ratio = widthRatio > heightRatio ? heightRatio : widthRatio;
-        const canvasWidth = context.canvas.width * ratio;
-        const canvasHeight = context.canvas.height * ratio;
-
-        const marginX = (pageWidth - canvasWidth) / 2;
-        const marginY = (pageHeight - canvasHeight) / 2;
-        //shape image
-        doc.addImage(
-          imgData,
-          "PNG",
-          marginX,
-          marginY,
-          canvasWidth,
-          canvasHeight
-        );
-      }
       // ----------- All Structures Summary ----------
       doc.addPage();
       header();
@@ -498,27 +401,12 @@ export default {
       doc.text(`Measurement`, 140, 40);
       doc.setFontSize(13);
       doc.setTextColor("Gray");
-      doc.text(
-        `Total Roof Area ${this.numberWithCommas(_printData.totalArea)} ${
-          _printData.unit
-        }`,
-        140,
-        52
-      );
+      doc.text(`Total Roof Area ${this.numberWithCommas(_printData.totalArea)} ${ _printData.unit }`, 140, 52);
       doc.text(`Total Roof Facets ${_printData.totalFacets} facets`, 140, 62);
-      let EavesRakes = 0,
-        HipsRidges = 0,
-        startY = 0,
-        lengthUnit;
+      let EavesRakes = 0, HipsRidges = 0, startY = 0, lengthUnit;
       if (_printData.measurement) {
         Object.keys(_printData.measurement).map((key, index) => {
-          doc.text(
-            `Total ${key}  ${_printData.measurement[key].length.toFixed(2)} ${
-              _printData.measurement[key].unit
-            }`,
-            140,
-            72 + index * 10
-          );
+          doc.text(`Total ${key}  ${_printData.measurement[key].length.toFixed(2)} ${ _printData.measurement[key].unit }`, 140, 72 + index * 10);
 
           startY = 72 + index * 10;
           switch (key) {
@@ -537,38 +425,124 @@ export default {
             default:
               break;
           }
-          lengthUnit = _printData.measurement[key] && _printData.measurement[key].unit && _printData.measurement[key].unit;
+          lengthUnit =
+            _printData.measurement[key] &&
+            _printData.measurement[key].unit &&
+            _printData.measurement[key].unit;
         });
-        doc.text( `Hips + Ridgest  ${HipsRidges.toFixed(2)} ${lengthUnit}`, 140, startY + 10 );
-        doc.text( `Eaves + Rakes  ${EavesRakes.toFixed(2)} ${lengthUnit}`, 140, startY + 20 );
-        // Add all shape start
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const widthRatio = pageWidth / context.canvas.width;
-        const heightRatio = pageHeight / context.canvas.height;
-        const ratio = widthRatio > heightRatio ? heightRatio : widthRatio;
-        const canvasWidth = context.canvas.width * ratio;
-        const canvasHeight = context.canvas.height * ratio;
-        const marginX = (pageWidth - canvasWidth) / 2;
-        const marginY = (pageHeight - canvasHeight) / 2;
-        doc.addImage(this.pdfShape, "PNG", marginX, marginY, canvasWidth, canvasHeight);
+        doc.text(
+          `Hips + Ridgest  ${HipsRidges.toFixed(2)} ${lengthUnit}`,
+          140,
+          startY + 10
+        );
+        doc.text(
+          `Eaves + Rakes  ${EavesRakes.toFixed(2)} ${lengthUnit}`,
+          140,
+          startY + 20
+        );
       }
+      // Add all shape
+      this.drawShapeInPdf(context, canvasElement, doc, 30, 50, 70, 80);
 
       doc.setFontSize(14);
       doc.setTextColor("#259ad7");
       doc.setFillColor("#DCDCDC");
-      doc.rect(18, startY + 44, doc.internal.pageSize.width - 38, 9, "F");
-      doc.text(`Pitch`, 20, startY + 50);
-      doc.text(`0/12`, 60, startY + 50);
+      doc.rect(18, startY + 74, doc.internal.pageSize.width - 38, 9, "F");
+      doc.text(`Pitch`, 20, startY + 80);
+      doc.text(`0/12`, 60, startY + 80);
       doc.setTextColor("Gray");
-      doc.text(`Area (${_printData.unit})`, 20, startY + 60);
-      doc.text(this.numberWithCommas(_printData.totalArea), 60, startY + 60);
-      doc.text(`Squares`, 20, startY + 70);
-      doc.text(this.squaresOfShingles(_printData.totalArea), 60, startY + 70);
+      doc.text(`Area (${_printData.unit})`, 20, startY + 90);
+      doc.text(this.numberWithCommas(_printData.totalArea), 60, startY + 90);
+      doc.text(`Squares`, 20, startY + 100);
+      doc.text(this.squaresOfShingles(_printData.totalArea), 60, startY + 100);
       doc.save("map_report.pdf");
     },
-    drawShape( map, _finalObject, selectedColor, totalFacets, isEdges, isFacets ) {
-      drawShapefunction(map, _finalObject, selectedColor, totalFacets, isEdges, isFacets)
+    drawShape(
+      map,
+      _finalObject,
+      selectedColor,
+      totalFacets,
+      isEdges,
+      isFacets
+    ) {
+      drawShapefunction(
+        map,
+        _finalObject,
+        selectedColor,
+        totalFacets,
+        isEdges,
+        isFacets
+      );
+    },
+    getBoundingRect() {
+      let left = Infinity,
+        right = -Infinity;
+      let top = Infinity,
+        bottom = -Infinity;
+
+      for (var i = 0; i < this.polyData.length; i++) {
+        for (var j = 0; j < this.polyData[i].length; j++) {
+          if (left > this.polyData[i][j][0]) left = this.polyData[i][j][0];
+          if (top > this.polyData[i][j][1]) top = this.polyData[i][j][1];
+          if (right < this.polyData[i][j][0]) right = this.polyData[i][j][0];
+          if (bottom < this.polyData[i][j][1]) bottom = this.polyData[i][j][1];
+        }
+      }
+      return { x: left, y: top, width: right - left, height: bottom - top };
+    },
+    drawShapeInPdf(ctx, canvasElement, doc, xPoint, yPoint, width, height, i) {
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      let boundingRect = this.getBoundingRect();
+      let scale = Math.min(ctx.canvas.width, ctx.canvas.height);
+      for (var index = 0; index < this.polyData.length; index++) {
+        if (i !== undefined) {
+          if (index === i) {
+            ctx.beginPath();
+            for (var j = 0; j < this.polyData[index].length; j++) {
+              let x =
+                ((this.polyData[index][j][0] - boundingRect.x) /
+                  boundingRect.width) *
+                scale;
+              let y =
+                ((this.polyData[index][j][1] - boundingRect.y) /
+                  boundingRect.height) *
+                scale;
+              ctx.strokeStyle = "#259ad7";
+              ctx.lineWidth = 1.5;
+              ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.rotate(0.5);
+            ctx.fillStyle = "#DCDCDC";
+            ctx.fill();
+            ctx.stroke();
+            var imgData = canvasElement.toDataURL("image/png");
+            doc.addImage(imgData, "PNG", xPoint, yPoint, width, height);
+          }
+        } else {
+          ctx.beginPath();
+          for (var j = 0; j < this.polyData[index].length; j++) {
+            let x =
+              ((this.polyData[index][j][0] - boundingRect.x) /
+                boundingRect.width) *
+              scale;
+            let y =
+              ((this.polyData[index][j][1] - boundingRect.y) /
+                boundingRect.height) *
+              scale;
+            ctx.strokeStyle = "#259ad7";
+            ctx.lineWidth = 1.5;
+            ctx.lineTo(x, y);
+          }
+          ctx.closePath();
+          ctx.rotate(0.5);
+          ctx.fillStyle = "#DCDCDC";
+          ctx.fill();
+          ctx.stroke();
+          var imgData = canvasElement.toDataURL("image/png");
+          doc.addImage(imgData, "PNG", xPoint, yPoint, width, height);
+        }
+      }
     },
   },
 };

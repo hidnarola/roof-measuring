@@ -68,6 +68,8 @@ export const imageUrl = async (lat, lng, isMarker) => {
         return `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lng}&zoom=19&scale=1&size=600x300&maptype=satellite&format=png&visual_refresh=true&key=${process.env.VUE_APP_MAP_ID}`
     }
 }
-export const initLat = -41.2858;
-export const initLng = 174.78682;
+// export const initLat = -41.2858;
+// export const initLng = 174.78682;
+export const initLat = -41.285836653571685;
+export const initLng = 174.77876901626587;
 export const initZoom = 16;

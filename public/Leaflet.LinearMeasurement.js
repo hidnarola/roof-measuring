@@ -610,7 +610,7 @@
             var azimut = '',
                 me = this;
             // ------------------- latlng for draw ------------
-            var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [], totalArea: 0}
+            var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [], totalArea: 0 }
             var shapes = finalObject.shape || []
             // to make same first and end point create tempArray
             var tempArray = []
@@ -723,7 +723,6 @@
 
                     localStorage.setItem("finalObject", JSON.stringify(finalObject))
                     localStorage.setItem("polygon", JSON.stringify(polygon))
-
                 } else {
                     workspace.fireEvent('selected', data);
                 }

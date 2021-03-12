@@ -42,6 +42,8 @@ export default {
       var _finalObject = JSON.parse(
         JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
       );
+      var marker;
+
       //Load map
       this.map = L.map("map").setView(
         [
@@ -64,10 +66,7 @@ export default {
         shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
       });
 
-      L.marker([
-        latlng != null ? latlng.lat : initLat,
-        latlng != null ? latlng.lng : initLng,
-      ]).addTo(this.map);
+      marker = L.marker( [latlng != null ? latlng.lat : initLat, latlng != null ? latlng.lng : initLng], { draggable: true } ).addTo(this.map);
 
       var Ruler = L.Control.LinearMeasurement.extend({
         // layerSelected: function (e) {
@@ -77,15 +76,12 @@ export default {
       this.map.addControl(
         new Ruler({
           unitSystem: "imperial",
-          // unitSystem: "metric",
           color: "#1e0fff",
           opacity: 0,
           dashArray: [0, 0],
           dashArrayOptions: [],
         })
       );
-      // let mapTest = JSON.parse(JSON.stringify(this.map));
-      // localStorage.setItem("map", mapTest);
 
       //to get address of current latlng
       $.get(
@@ -117,7 +113,6 @@ export default {
 
       var input = document.getElementById("searchBox");
       var searchBox = new window.google.maps.places.SearchBox(input);
-
       searchBox.addListener("places_changed", function () {
         localStorage.removeItem("polygon");
         localStorage.removeItem("finalObject");
@@ -133,9 +128,7 @@ export default {
           //set address in finalObject
           vueInstance.setAddress(place.formatted_address);
           setTimeout(() => {
-            localStorage.setItem(
-              "initLatLng",
-              JSON.stringify(place.geometry.location)
+            localStorage.setItem( "initLatLng", JSON.stringify(place.geometry.location)
             );
           }, 100);
 
@@ -147,23 +140,25 @@ export default {
             shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
           });
           // Create a marker for each place.
-          var marker = L.marker([
-            place.geometry.location.lat(),
-            place.geometry.location.lng(),
-          ]);
+          marker = L.marker(
+            [place.geometry.location.lat(), place.geometry.location.lng()],
+            { draggable: true }
+          );
           group.addLayer(marker);
         });
 
         group.addTo(_this.map);
         _this.map.fitBounds(group.getBounds());
       });
-      this.map.on("zoomend", function (e) {
-        localStorage.setItem("zoom", e.target._zoom);
-        localStorage.setItem(
-          "initLatLng",
-          JSON.stringify(e.sourceTarget._animateToCenter)
+      marker.on("dragend", function (e) {
+        localStorage.setItem("initLatLng", JSON.stringify(e.target.getLatLng())
         );
       });
+
+      this.map.on("zoomend", function (e) {
+        localStorage.setItem("zoom", e.target._zoom);
+      });
+
       if (_finalObject && _finalObject.shape && _finalObject.shape.length > 0) {
         //Draw shape
         this.drawShape(this.map, _finalObject, vueInstance.selectedColor);
