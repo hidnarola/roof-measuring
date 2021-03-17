@@ -56,7 +56,7 @@
 
 <script>
 import _ from "lodash";
-import { initLat, initLng, initZoom } from "../../../shared/shared";
+import { initLat, initLng, initZoom, setAddress } from "../../../shared/shared";
 export default {
   name: "LeafletMap",
   data() {
@@ -82,96 +82,105 @@ export default {
     };
   },
   mounted() {
-   this.initMap();
+    this.initMap();
   },
   methods: {
     initMap() {
       var vueInstance = this;
-      var _finalObject = JSON.parse(JSON.stringify(JSON.parse(localStorage.getItem("finalObject"))));
-        var zoom = localStorage.getItem("zoom");
-        var initLatLng = JSON.parse(localStorage.getItem("initLatLng"));
-        this.polyData = JSON.parse(
-          JSON.stringify(JSON.parse(localStorage.getItem("polygon")))
-        );
+      var _finalObject = JSON.parse(
+        JSON.stringify(JSON.parse(localStorage.getItem("finalObject")))
+      );
+      var zoom = localStorage.getItem("zoom");
+      var initLatLng = JSON.parse(localStorage.getItem("initLatLng"));
+      this.polyData = JSON.parse(
+        JSON.stringify(JSON.parse(localStorage.getItem("polygon")))
+      );
 
-        this.lat = (initLatLng && initLatLng.lat) || initLat;
-        this.lng = (initLatLng && initLatLng.lng) || initLng;
+      this.lat = (initLatLng && initLatLng.lat) || initLat;
+      this.lng = (initLatLng && initLatLng.lng) || initLng;
 
-        this.map = L.map("myMap", {
-          attributionControl: false,
-          zoomControl: false,
-          fadeAnimation: false,
-          zoomAnimation: false,
-        }).setView([this.lat, this.lng], zoom ? zoom : initZoom);
+      this.map = L.map("myMap", {
+        attributionControl: false,
+        zoomControl: false,
+        fadeAnimation: false,
+        zoomAnimation: false,
+      }).setView([this.lat, this.lng], zoom ? zoom : initZoom);
 
-        L.tileLayer(process.env.VUE_APP_LEAFLET_MAP, {
-          maxZoom: 20,
-          maxNativeZoom: 19,
-        }).addTo(this.map);
-        var marker;
+      L.tileLayer(process.env.VUE_APP_LEAFLET_MAP, {
+        maxZoom: 20,
+        maxNativeZoom: 19,
+      }).addTo(this.map);
+      var marker;
 
-        marker = L.marker([this.lat, this.lng], {
-          draggable: true
-        }).addTo(this.map);
+      marker = L.marker([this.lat, this.lng], {
+        draggable: true,
+      }).addTo(this.map);
 
-        if (_finalObject && _finalObject.shape != null && _finalObject.shape.length > 0) {
-          _finalObject.shape.map((shp, shpIndex) => {
-            shp.path.map((path, pathIndex) => {
-              //  create a polyline
-              var poly = new L.Polyline(path, {
-                showMeasurements: true,
-                color: vueInstance.selectedColor || path[0].color,
-                dashArray: "5 5",
-                lineCap: "round",
-                weight: 3,
-                opacity: 1,
-                measurementOptions: { imperial: true },
-              }).addTo(this.map);
+      if (
+        _finalObject &&
+        _finalObject.shape != null &&
+        _finalObject.shape.length > 0
+      ) {
+        _finalObject.shape.map((shp, shpIndex) => {
+          shp.path.map((path, pathIndex) => {
+            //  create a polyline
+            var poly = new L.Polyline(path, {
+              showMeasurements: true,
+              color: vueInstance.selectedColor || path[0].color,
+              dashArray: "5 5",
+              lineCap: "round",
+              weight: 3,
+              opacity: 1,
+              measurementOptions: { imperial: true },
+            }).addTo(this.map);
 
-              var distance = L.latLng([path[0].lat, path[0].lng]).distanceTo([
-                path[1].lat,
-                path[1].lng,
-              ]);
+            var distance = L.latLng([path[0].lat, path[0].lng]).distanceTo([
+              path[1].lat,
+              path[1].lng,
+            ]);
 
-              var feet = (distance.toFixed(4) * 3.2808).toFixed(2);
+            var feet = (distance.toFixed(4) * 3.2808).toFixed(2);
 
-              path[0]["length"] = `${feet} ft`;
-              path[1]["length"] = `${feet} ft`;
+            path[0]["length"] = `${feet} ft`;
+            path[1]["length"] = `${feet} ft`;
 
-              poly.setText(`${feet} ft`, {
-                center: true,
-                attributes: { fill: "yellow" },
-              });
-
-              this.updateLineColor(shp, _finalObject);
-              poly.on("click", function (e) {
-                if (vueInstance.enableColor) {
-                  //Color change code
-                  vueInstance.colorPolyline(shp, path, e, _finalObject);
-                } else if (vueInstance.enableDelete) {
-                  // Delete line code
-                  vueInstance.deletePolyline(
-                    shp,
-                    pathIndex,
-                    shpIndex,
-                    path,
-                    e,
-                    _finalObject
-                  );
-                }
-              });
-              _finalObject.totalFacets = this.polyData.length;
-              localStorage.setItem("finalObject", JSON.stringify(_finalObject));
+            poly.setText(`${feet} ft`, {
+              center: true,
+              attributes: { fill: "yellow" },
             });
-          });
-        }
-        marker.on("dragend", function (e) {
-          localStorage.setItem("initLatLng", JSON.stringify(e.target.getLatLng()));
-        });
-        this.map.on("zoomend", function (e) {
-          localStorage.setItem("zoom", e.target._zoom);
-        })
 
+            this.updateLineColor(shp, _finalObject);
+            poly.on("click", function (e) {
+              if (vueInstance.enableColor) {
+                //Color change code
+                vueInstance.colorPolyline(shp, path, e, _finalObject);
+              } else if (vueInstance.enableDelete) {
+                // Delete line code
+                vueInstance.deletePolyline(
+                  shp,
+                  pathIndex,
+                  shpIndex,
+                  path,
+                  e,
+                  _finalObject
+                );
+              }
+            });
+            _finalObject.totalFacets = this.polyData.length;
+            localStorage.setItem("finalObject", JSON.stringify(_finalObject));
+          });
+        });
+      }
+      marker.on("dragend", function (e) {
+        localStorage.setItem(
+          "initLatLng",
+          JSON.stringify(e.target.getLatLng())
+        );
+        setAddress(e.target.getLatLng().lat, e.target.getLatLng().lng);
+      });
+      this.map.on("zoomend", function (e) {
+        localStorage.setItem("zoom", e.target._zoom);
+      });
     },
     deletePolyline(shp, pathIndex, shpIndex, path, e, _finalObject) {
       if (
@@ -210,7 +219,10 @@ export default {
             delete shp.type[path[0].label];
           }
         }
-        if (_finalObject.measurement && _finalObject.measurement.hasOwnProperty(path[0].label)) {
+        if (
+          _finalObject.measurement &&
+          _finalObject.measurement.hasOwnProperty(path[0].label)
+        ) {
           _finalObject.measurement[path[0].label].length -= len;
           if (_finalObject.measurement[path[0].label].length <= 0) {
             delete _finalObject.measurement[path[0].label];

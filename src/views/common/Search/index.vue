@@ -11,12 +11,12 @@
 </template>
 
 <script>
-import $ from "jquery";
 import {
   drawShapefunction,
   initLat,
   initLng,
   initZoom,
+  setAddress,
 } from "../../../shared/shared";
 
 export default {
@@ -66,12 +66,15 @@ export default {
         shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
       });
 
-      marker = L.marker( [latlng != null ? latlng.lat : initLat, latlng != null ? latlng.lng : initLng], { draggable: true } ).addTo(this.map);
+      marker = L.marker(
+        [
+          latlng != null ? latlng.lat : initLat,
+          latlng != null ? latlng.lng : initLng,
+        ],
+        { draggable: true }
+      ).addTo(this.map);
 
-      var Ruler = L.Control.LinearMeasurement.extend({
-        // layerSelected: function (e) {
-        // },
-      });
+      var Ruler = L.Control.LinearMeasurement.extend({});
 
       this.map.addControl(
         new Ruler({
@@ -84,13 +87,8 @@ export default {
       );
 
       //to get address of current latlng
-      $.get(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${initLat}&lon=${initLng}`,
-        (data) => {
-          //set address in finalObject
-          vueInstance.setAddress(data.address.road);
-        }
-      );
+      setAddress(initLat, initLng);
+
       var info = L.control({ position: "topleft" });
 
       info.onAdd = function (map) {
@@ -126,9 +124,16 @@ export default {
 
         places.forEach(function (place) {
           //set address in finalObject
-          vueInstance.setAddress(place.formatted_address);
+
+          setAddress(
+            place.geometry.location.lat(),
+            place.geometry.location.lng()
+          );
+
           setTimeout(() => {
-            localStorage.setItem( "initLatLng", JSON.stringify(place.geometry.location)
+            localStorage.setItem(
+              "initLatLng",
+              JSON.stringify(place.geometry.location)
             );
           }, 100);
 
@@ -140,6 +145,7 @@ export default {
             shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
           });
           // Create a marker for each place.
+
           marker = L.marker(
             [place.geometry.location.lat(), place.geometry.location.lng()],
             { draggable: true }
@@ -151,8 +157,11 @@ export default {
         _this.map.fitBounds(group.getBounds());
       });
       marker.on("dragend", function (e) {
-        localStorage.setItem("initLatLng", JSON.stringify(e.target.getLatLng())
+        localStorage.setItem(
+          "initLatLng",
+          JSON.stringify(e.target.getLatLng())
         );
+        setAddress(e.target.getLatLng().lat, e.target.getLatLng().lng);
       });
 
       this.map.on("zoomend", function (e) {
@@ -172,17 +181,6 @@ export default {
     },
     drawShape(map, _finalObject, selectedColor) {
       drawShapefunction(map, _finalObject, selectedColor);
-    },
-    setAddress(address) {
-      let finalObject = JSON.parse(localStorage.getItem("finalObject"));
-      if (finalObject === null) {
-        let finalObject = {};
-        finalObject.address = address;
-        localStorage.setItem("finalObject", JSON.stringify(finalObject));
-      } else {
-        finalObject.address = address;
-        localStorage.setItem("finalObject", JSON.stringify(finalObject));
-      }
     },
   },
 };
