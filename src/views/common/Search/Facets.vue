@@ -651,7 +651,6 @@ export default {
       ctx.save();
 
       ctx.translate(width, height * 15.8);
-      // ctx.translate(width, height * 19);
       ctx.rotate((Math.PI / 180) * -89);
 
       for (var j = 0; j < this.polyData[index].length; j++) {

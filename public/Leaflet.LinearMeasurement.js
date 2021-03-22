@@ -1,3 +1,4 @@
+
 (function () {
     L.Control.LinearMeasurement = L.Control.extend({
         options: {
@@ -7,7 +8,6 @@
             contrastingColor: '#fff',
             show_last_node: false,
             show_azimut: false
-
         },
 
         clickSpeed: 200,
@@ -92,26 +92,16 @@
             var poly = []
             me.tempPolygon = []
 
+            var polygon = JSON.parse(localStorage.getItem("polygon")) || []
+
             this.clickEventFn = function (e) {
-                //added by ssi- start - issue - first time when click with dbl clcik then getting error of undefined
+                // Added by ssi- start - issue - first time when click with dbl clcik then getting error of undefined
+
                 if (this.poly && me.latlngsList.length === 0) {
                     me.latlngsList.push(this.latlngs);
                 }
-                //added by ssi- end
-
                 me.tempPolygon.push([e.latlng.lat, e.latlng.lng])
 
-                let len = me.tempPolygon.length
-
-                if (len >= 2) {
-                    let last = me.tempPolygon[len - 1]
-                    let lastToSecond = me.tempPolygon[len - 2]
-                    if (last[0] === lastToSecond[0] && last[1] === lastToSecond[1]) {
-                        me.tempPolygon.pop()
-                    }
-                }
-                //ssi start
-                const polygon = JSON.parse(localStorage.getItem("polygon")) || []
                 if (me.clickHandle) {
                     clearTimeout(me.clickHandle);
                     me.clickHandle = 0;
@@ -123,22 +113,54 @@
 
                     me.getDblClickHandler(e);
                     // me.getDblClickHandler(e, poly);
-                }
-                else {
+                } else {
                     if (me.tempPolygon.length > 0) {
                         for (var i = 0; i < me.tempPolygon.length; i++) {
                             if (me.tempPolygon.length - 1 !== i) {
                                 let everyPoint = L.latLng(me.tempPolygon[i])
                                 let current = L.latLng(e.latlng)
                                 var dist = parseInt(everyPoint.distanceTo(current).toFixed(0))
-                                if (dist <= 5) {
+
+                                if (dist <= 1) {
                                     //need to set frist and last point same before pushing the shape in polygon array
                                     me.tempPolygon.pop()
-                                    me.tempPolygon.push(me.tempPolygon[0])
+
+                                    if (!_(me.tempPolygon[me.tempPolygon.length - 1]).differenceWith(me.tempPolygon[0], _.isEqual).isEmpty()) {
+                                        me.tempPolygon.push(me.tempPolygon[0])
+                                    }
+
                                     polygon.push(me.tempPolygon)
+
+                                    // To get polygon with unique data
+                                    function Unique(array) {
+                                        var tmp = [];
+                                        var result = [];
+                                        if (array !== undefined /* any additional error checking */) {
+                                            for (var i = 0; i < array.length; i++) {
+                                                var val = array[i];
+
+                                                if (tmp[val] === undefined) {
+                                                    tmp[val] = true;
+                                                    result.push(val);
+                                                }
+
+                                            }
+                                        }
+                                        return result;
+                                    }
+                                    polygon = Unique(polygon);
                                 }
                             }
                         }
+                        //  Polygon pushing the data after complting the shape so removing data if shape is complete with first and last data same
+                        for (let index = 0; index < polygon.length; index++) {
+                            for (let j = 0; j < polygon[index].length; j++) {
+                                if (j !== 0 && polygon[index][0] === polygon[index][j]) {
+                                    polygon[index].splice(j + 1, 1)
+                                }
+                            }
+                        }
+
                         localStorage.setItem("polygon", JSON.stringify(polygon))
                     }
                     me.preClick(e);
@@ -208,7 +230,6 @@
             this.total = null;
             this.lastCircle = null;
             this.tempPolygon = []
-
 
 
             /* Leaflet return distances in meters */
@@ -501,7 +522,19 @@
             me.sum = 0;
 
             if (me.poly) {
+                // test
+
+                // me.latlngsList.push(me.latlngs)
+
                 me.latlngsList.push(me.latlngs);
+
+                if (me.latlngsList.length > 2) {
+                    let uniqData = _.uniqBy(me.latlngsList, function (e) {
+                        return e;
+                    });
+                    me.latlngsList = uniqData
+                }
+
                 if (!me.multi) {
                     me.multi = me.renderMultiPolyline(me.latlngsList, '5 5', me.layer, 'dot');
                 } else {
@@ -612,14 +645,17 @@
             // ------------------- latlng for draw ------------
             var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [], totalArea: 0 }
             var shapes = finalObject.shape || []
-            // to make same first and end point create tempArray
+            // To make same first and end point create tempArray
             var tempArray = []
+
+
             var tmpo = JSON.parse(JSON.stringify(me.latlngsList))
 
             if (tmpo.length > 1) {
                 tempArray.push((tmpo)[tmpo.length - 1][1], JSON.parse(JSON.stringify(e.latlng)))
                 tmpo.push(tempArray)
             }
+
             if (finalObject && finalObject.shape && finalObject.shape.length < 0) {
                 finalObject.shape = shapes
             } else {
@@ -642,18 +678,23 @@
             const polygon = JSON.parse(localStorage.getItem("polygon")) || []
 
             finalObject.shape.length > 0 && finalObject.shape.map((shape, shapeIndex) => {
+
+                // debugger;
                 shape.path.map((shapePath, shapePathIndex) => {
+
                     polygon.map((polygonShape, polygonShapeIndex) => {
-                        polygonShape.map((polyPath, polyPathIndex) => {
-                            // condition to get shape
-                            if (shape.path[0][0].lat == polyPath[0] && shape.path[0][0].lng == polyPath[1]) {
-                                // set the polygon points in path
-                                if (polygonShape[polygonShape.length - 2][0] == shapePath[0].lat && polygonShape[polygonShape.length - 2][1] == shapePath[0].lng) {
-                                    shapePath[1].lat = polyPath[0]
-                                    shapePath[1].lng = polyPath[1]
+                        if (shape.path.length >= 2 && !_(shape.path[0]).differenceWith(shape.path[1], _.isEqual).isEmpty()) {
+                            polygonShape.map((polyPath, polyPathIndex) => {
+                                // condition to get shape
+                                if (shape.path[0][0].lat == polyPath[0] && shape.path[0][0].lng == polyPath[1]) {
+                                    // set the polygon points in path
+                                    if (polygonShape[polygonShape.length - 2][0] == shapePath[0].lat && polygonShape[polygonShape.length - 2][1] == shapePath[0].lng) {
+                                        shapePath[1].lat = polyPath[0]
+                                        shapePath[1].lng = polyPath[1]
+                                    }
                                 }
-                            }
-                        })
+                            })
+                        }
                     })
                 })
             })
@@ -695,16 +736,15 @@
                     var polyShapeDeleteId, polygonDeleteId
                     var finalObject = JSON.parse(localStorage.getItem("finalObject"))
                     var polygon = JSON.parse(localStorage.getItem("polygon"))
-
                     workspace.eachLayer(layer => {
                         if (layer._latlng) {
                             finalObject.shape.length > 0 && finalObject.shape.map((shape, shapeIndex) => {
                                 shape.path.map((path, pathIndex) => {
-                                    //Matching shape in finalObject
+                                    //Finding selected shape in finalObject
                                     if ((layer._latlng.lat == path[0].lat || layer._latlng.lat == path[1].lat) && (layer._latlng.lng == path[0].lng || layer._latlng.lng == path[1].lng)) {
                                         polyShapeDeleteId = shapeIndex
                                     }
-                                    //Matching shape in polygon
+                                    //Finding selected shape in polygon
                                     polygon.map((polyShape, polyShapeIndex) => {
                                         polyShape.map(poly => {
                                             if (poly[0] == layer._latlng.lat || poly[1] == layer._latlng.lng) {

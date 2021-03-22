@@ -73,7 +73,6 @@ export default {
         ],
         { draggable: true }
       ).addTo(this.map);
-
       var Ruler = L.Control.LinearMeasurement.extend({});
 
       this.map.addControl(
