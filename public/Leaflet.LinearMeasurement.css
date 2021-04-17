@@ -80,6 +80,7 @@
 
 .node-label {
     top: -25px !important;
+    /* top: -12px !important; */
 }
 
 .azimut {
@@ -93,3 +94,8 @@
     text-shadow: none;
     font-weight: bold;
 }
+/* .leaflet-marker-icon.total-popup-label.node-label.leaflet-zoom-animated.leaflet-interactive span{
+    position: absolute;
+    top:9px;
+    left:0;
+} */

@@ -339,6 +339,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 	pointer-events: visiblePainted;
 	/* IE 9-10 doesn't have auto */
 	pointer-events: auto;
+	/* path.leaflet-interactive { */
+	stroke-width: 1.5;
+/* } */
 }
 
 /* visual tweaks */

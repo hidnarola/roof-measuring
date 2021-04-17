@@ -180,7 +180,6 @@ export default {
     },
     async handlePdf() {
       //PDF data
-
       let canvasElement = document.getElementById("canvas");
       var context = canvasElement.getContext("2d");
 
@@ -364,7 +363,7 @@ export default {
       doc.autoTable(areaCol, areaRows, { startY: 40 });
       // -------------Area Measurement Report End---------
 
-      _printData.shape.length > 0 &&
+      _printData.shape.length > 1 &&
         _printData.shape.map((shp, i) => {
           if (shp.area != 0) {
             // ------------- Structure Summary for particular Shape -----------------
@@ -538,7 +537,6 @@ export default {
       }
       // Add all shape
       this.drawShapeInPdf(context, canvasElement, doc, 30, 40, 85, 95.2);
-
       doc.setFontSize(14);
       doc.setTextColor("#259ad7");
       doc.setFillColor("#DCDCDC");
@@ -662,7 +660,7 @@ export default {
             boundingRect.height) *
           scale;
         ctx.strokeStyle = "#259ad7";
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 2;
         ctx.lineTo(x, y);
       }
       ctx.closePath();

@@ -122,7 +122,7 @@
                                 var dist = parseInt(everyPoint.distanceTo(current).toFixed(0))
 
                                 if (dist <= 1) {
-                                    //need to set frist and last point same before pushing the shape in polygon array
+                                    //Need to set frist and last point same before pushing the shape in polygon array
                                     me.tempPolygon.pop()
 
                                     if (!_(me.tempPolygon[me.tempPolygon.length - 1]).differenceWith(me.tempPolygon[0], _.isEqual).isEmpty()) {
@@ -152,7 +152,7 @@
                                 }
                             }
                         }
-                        //  Polygon pushing the data after complting the shape so removing data if shape is complete with first and last data same
+                        // Polygon pushing the data after complting the shape so removing data if shape is complete with first and last data same
                         for (let index = 0; index < polygon.length; index++) {
                             for (let j = 0; j < polygon[index].length; j++) {
                                 if (j !== 0 && polygon[index][0] === polygon[index][j]) {
@@ -230,8 +230,6 @@
             this.total = null;
             this.lastCircle = null;
             this.tempPolygon = []
-
-
             /* Leaflet return distances in meters */
             this.UNIT_CONV = 1000;
             this.SUB_UNIT_CONV = 1000;
@@ -317,6 +315,7 @@
 
                             m.setIcon(cicon);
                         }
+
                     }
                 });
             }
@@ -522,10 +521,6 @@
             me.sum = 0;
 
             if (me.poly) {
-                // test
-
-                // me.latlngsList.push(me.latlngs)
-
                 me.latlngsList.push(me.latlngs);
 
                 if (me.latlngsList.length > 2) {
@@ -591,6 +586,7 @@
                 }
 
                 /* tooltip with total distance */
+
                 var label = this.measure.scalar + ' ' + this.measure.unit,
                     html = '<span class="total-popup-content" style="background-color:' + this.options.color + '; color: ' + this.options.contrastingColor + '">' + label + azimut + '</span>';
 
@@ -645,6 +641,8 @@
             // ------------------- latlng for draw ------------
             var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [], totalArea: 0 }
             var shapes = finalObject.shape || []
+            var measurement = null
+
             // To make same first and end point create tempArray
             var tempArray = []
 
@@ -662,26 +660,127 @@
                 shapes.push({ path: tmpo, area: 0, unit: "sqft" })
                 finalObject.shape = shapes
             }
+
             // Set out the finalObject
             finalObject.shape.length > 0 && finalObject.shape.map(poly => {
                 poly.path.map(pl => {
+                    var distance = L.latLng([pl[0].lat, pl[0].lng]).distanceTo([
+                        pl[1].lat,
+                        pl[1].lng,
+                    ]);
+
+                    var feet = (distance.toFixed(4) * 3.2808).toFixed(2);
                     pl.map(p => {
                         if (!p.hasOwnProperty("color") && !p.hasOwnProperty("length") && !p.hasOwnProperty("label")) {
                             {
-                                p.color = "#1e0fff", p.length = `${0} ft`, p.label = "Unspecified"
+                                p.color = "#1e0fff", p.label = "Unspecified", p.length = `${feet} ft`
                             }
                         }
                     })
                 })
             })
+
+            finalObject.shape.length > 0 && finalObject.shape.map(shp => {
+                var types = null;
+                shp.path.map(path => {
+                    let unit = path[1].length.split(" ").pop();
+                    let length = parseFloat(path[1].length.split(" ")[0]);
+
+                    var distance = L.latLng([path[0].lat, path[0].lng]).distanceTo([
+                        path[1].lat,
+                        path[1].lng,
+                    ]);
+
+                    var feet = (distance.toFixed(4) * 3.2808).toFixed(2);
+                    if (
+                        types &&
+                        types[path[1].label] != null &&
+                        path[1].label == types[path[1].label].label
+                    ) {
+                        types[path[1].label].length += length;
+                    } else {
+                        types = {
+                            ...types,
+                            [path[1].label]: {
+                                length: length,
+                                label: path[1].label,
+                                color: path[1].color,
+                                unit,
+                            },
+                        };
+                    }
+                    // shp.type = types
+                    shp.type = {
+                        ...types,
+                        ..._.omit(
+                            {
+                                ...types,
+                                Unspecified: {
+                                    length: 0,
+                                    label: "Unspecified",
+                                    color: "#1e0fff",
+                                    unit,
+                                },
+                                Hips: {
+                                    length: 0,
+                                    label: "Hips",
+                                    color: "#9368b7",
+                                    unit,
+                                },
+                                Valleys: {
+                                    length: 0,
+                                    label: "Valleys",
+                                    color: "#f0512e",
+                                    unit,
+                                },
+                                Eaves: {
+                                    length: 0,
+                                    label: "Eaves",
+                                    color: "#71bf82",
+                                    unit,
+                                },
+                                Rakes: {
+                                    length: 0,
+                                    label: "Rakes",
+                                    color: "#ffcc0f",
+                                    unit,
+                                },
+                                Ridges: {
+                                    length: 0,
+                                    label: "Ridges",
+                                    color: "#d0efb1",
+                                    unit,
+                                },
+                            },
+                            [...Object.keys(types)]
+                        ),
+                    };
+                })
+                // Add measurement object in finalObject to manage total lenght with color details
+                shp.type &&
+                    Object.keys(shp.type).map((key, index) => {
+                        if (measurement && measurement[key] != null) {
+                            measurement[key].length += shp.type[key].length;
+                        } else {
+                            measurement = {
+                                ...measurement,
+                                [key]: {
+                                    label: shp.type[key].label,
+                                    color: shp.type[key].color,
+                                    length: shp.type[key].length,
+                                    unit: shp.type[key].unit,
+                                },
+                            };
+                        }
+                    });
+                finalObject.measurement = measurement;
+            })
+
             //Update the finalObject as per the polygon for complete shapes(first and last point same)
             const polygon = JSON.parse(localStorage.getItem("polygon")) || []
 
             finalObject.shape.length > 0 && finalObject.shape.map((shape, shapeIndex) => {
-
-                // debugger;
                 shape.path.map((shapePath, shapePathIndex) => {
-
                     polygon.map((polygonShape, polygonShapeIndex) => {
                         if (shape.path.length >= 2 && !_(shape.path[0]).differenceWith(shape.path[1], _.isEqual).isEmpty()) {
                             polygonShape.map((polyPath, polyPathIndex) => {
@@ -699,6 +798,7 @@
                 })
             })
             localStorage.setItem("finalObject", JSON.stringify(finalObject))
+
             if (!this.total) {
                 return;
             }
@@ -719,6 +819,14 @@
                     '  </svg>',
                     '</div>'
                 ].join('');
+
+            // html = [
+            //     '<div class="total-popup-content" style="background-color:' + this.options.color + '; color: ' + this.options.contrastingColor + '">' + label + azimut,
+            //     '  <svg class="close" viewbox="0 0 45 35">',
+            //     '   <path  style="stroke: ' + this.options.contrastingColor + '" class="close" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
+            //     '  </svg>',
+            //     '</div>'
+            // ].join('');
 
 
             this.totalIcon = L.divIcon({ className: 'total-popup', html: html });
@@ -756,7 +864,7 @@
                             })
                         }
                     })
-                    //Delete shape on draw page on click close icon
+                    // Delete shape on draw page on click close icon
                     finalObject.shape.splice(polyShapeDeleteId, 1)
                     polygon.splice(polygonDeleteId, 1)
                     me.mainLayer.removeLayer(workspace);

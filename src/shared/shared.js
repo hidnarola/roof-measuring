@@ -1,6 +1,7 @@
 import $ from "jquery";
 
 export const drawShapefunction = (map, _finalObject, selectedColor, totalFacets = 0, isEdges = false, isFacets = false) => {
+
     _finalObject.shape.map((shp) => {
         for (var i = 0; i < shp.path.length; i++) {
             //  create a polyline
@@ -12,17 +13,7 @@ export const drawShapefunction = (map, _finalObject, selectedColor, totalFacets 
                 opacity: 1,
             }).addTo(map);
 
-            var distance = L.latLng([
-                shp.path[i][0].lat,
-                shp.path[i][0].lng,
-            ]).distanceTo([shp.path[i][1].lat, shp.path[i][1].lng]);
-
-            var feet = (distance.toFixed(4) * 3.2808).toFixed(2);
-
-            shp.path[i][0]["length"] = `${feet} ft`;
-            shp.path[i][1]["length"] = `${feet} ft`;
-
-            poly.setText(`${feet} ft`, { center: true, attributes: { fill: "yellow" } });
+            poly.setText(`${shp.path[i][1]["length"]}`, { center: true, attributes: { fill: "yellow", } });
         }
     });
 
@@ -35,9 +26,11 @@ export const setAddress = (lat, lng) => {
     $.get(
         `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
         (data) => {
-            var address = data.address.road + ', ' + data.address.city && data.address.city + ', ' + data.address.state + ', ' + data.address.country;
+            var address = `${data.address.house_number ? data.address.house_number + ',' : ''}${data.address.building ? data.address.building + ',' : ''}${data.address.road ? data.address.road + ',' : ''}${data.address.town ? data.address.town + ',' : ''} ${data.address.city ? data.address.city + ',' : ''} ${data.address.postcode ? data.address.postcode + ',' : ''} ${data.address.state ? data.address.state + ',' : ''} ${data.address.country ? data.address.country : ''}`;
+
             //set address in finalObject
             let finalObject = JSON.parse(localStorage.getItem("finalObject"));
+
             if (finalObject === null) {
                 let finalObject = {};
                 finalObject.address = address;

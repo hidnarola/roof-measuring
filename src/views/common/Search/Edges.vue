@@ -123,7 +123,7 @@ export default {
       ) {
         _finalObject.shape.map((shp, shpIndex) => {
           shp.path.map((path, pathIndex) => {
-            //  create a polyline
+            // Create a polyline
             var poly = new L.Polyline(path, {
               showMeasurements: true,
               color: vueInstance.selectedColor || path[0].color,
@@ -134,22 +134,11 @@ export default {
               measurementOptions: { imperial: true },
             }).addTo(this.map);
 
-            var distance = L.latLng([path[0].lat, path[0].lng]).distanceTo([
-              path[1].lat,
-              path[1].lng,
-            ]);
-
-            var feet = (distance.toFixed(4) * 3.2808).toFixed(2);
-
-            path[0]["length"] = `${feet} ft`;
-            path[1]["length"] = `${feet} ft`;
-
-            poly.setText(`${feet} ft`, {
+            poly.setText(`${path[1].length}`, {
               center: true,
               attributes: { fill: "yellow" },
             });
 
-            this.updateLineColor(shp, _finalObject);
             poly.on("click", function (e) {
               if (vueInstance.enableColor) {
                 //Color change code
@@ -212,20 +201,22 @@ export default {
             }
           });
         });
-        let len = parseFloat(path[0].length.split(" ")[0]);
-        if (shp.type && shp.type.hasOwnProperty(path[0].label)) {
-          shp.type[path[0].label].length -= len;
-          if (shp.type[path[0].label].length <= 0) {
-            delete shp.type[path[0].label];
+
+        let len = parseFloat(path[1].length.split(" ")[0]);
+
+        if (shp.type && shp.type.hasOwnProperty(path[1].label)) {
+          shp.type[path[1].label].length -= len;
+          if (shp.type[path[1].label].length <= 0) {
+            shp.type[path[1].label].length = 0;
           }
         }
         if (
           _finalObject.measurement &&
-          _finalObject.measurement.hasOwnProperty(path[0].label)
+          _finalObject.measurement.hasOwnProperty(path[1].label)
         ) {
           _finalObject.measurement[path[0].label].length -= len;
           if (_finalObject.measurement[path[0].label].length <= 0) {
-            delete _finalObject.measurement[path[0].label];
+            _finalObject.measurement[path[0].label].length = 0;
           }
         }
         e.sourceTarget.remove(this.map);
@@ -278,52 +269,78 @@ export default {
         this.isOpenModel = true;
       }
     },
-    drawShape(
-      map,
-      _finalObject,
-      selectedColor,
-      totalFacets,
-      isEdges,
-      isFacets
-    ) {
-      drawShapefunction(
-        map,
-        _finalObject,
-        selectedColor,
-        totalFacets,
-        isEdges,
-        isFacets
-      );
-    },
     updateLineColor(shp, _finalObject) {
-      var type = null,
-        measurement = null;
-
-      shp.path.map((pathPoint, pathPointIndex) => {
-        if (pathPointIndex == 0) return;
-        let unit = pathPoint[0].length.split(" ").pop();
-        let length = parseFloat(pathPoint[0].length.split(" ")[0]);
-        //Shape's type object update - type handeling lines color
+      var type = null;
+      var measurement = null;
+      shp.path.map((pathPoint) => {
+        let unit = pathPoint[1].length.split(" ").pop();
+        let length = parseFloat(pathPoint[1].length.split(" ")[0]);
+        // Update shape's type object - type is handeling line's color and length info
         if (
           type &&
-          type[pathPoint[0].label] != null &&
-          pathPoint[0].label == type[pathPoint[0].label].label
+          type[pathPoint[1].label] != null &&
+          pathPoint[1].label == type[pathPoint[1].label].label
         ) {
-          type[pathPoint[0].label].length += length;
+          type[pathPoint[1].label].length += length;
         } else {
           type = {
             ...type,
-            [pathPoint[0].label]: {
+            [pathPoint[1].label]: {
               length: length,
-              label: pathPoint[0].label,
-              color: pathPoint[0].color,
+              label: pathPoint[1].label,
+              color: pathPoint[1].color,
               unit,
             },
           };
-          shp.type = type;
         }
+        shp.type = {
+          ...type,
+          ..._.omit(
+            {
+              ...type,
+              Unspecified: {
+                length: 0,
+                label: "Unspecified",
+                color: "#1e0fff",
+                unit,
+              },
+              Hips: {
+                length: 0,
+                label: "Hips",
+                color: "#9368b7",
+                unit,
+              },
+              Valleys: {
+                length: 0,
+                label: "Valleys",
+                color: "#f0512e",
+                unit,
+              },
+              Eaves: {
+                length: 0,
+                label: "Eaves",
+                color: "#71bf82",
+                unit,
+              },
+              Rakes: {
+                length: 0,
+                label: "Rakes",
+                color: "#ffcc0f",
+                unit,
+              },
+              Ridges: {
+                length: 0,
+                label: "Ridges",
+                color: "#d0efb1",
+                unit,
+              },
+            },
+            [...Object.keys(type)]
+          ),
+        };
       });
       //update measurements for all shape line's color
+
       _finalObject.shape.map((shape) => {
         shape.type &&
           Object.keys(shape.type).map((key, index) => {
