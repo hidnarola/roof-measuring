@@ -640,8 +640,14 @@
                 me = this;
             // ------------------- latlng for draw ------------
             var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [], totalArea: 0 }
-            var shapes = finalObject.shape || []
-            var measurement = null
+
+            var shapes = finalObject.shape || [], measurement = null;
+            finalObject.wasteDetail = [{ per: 0, area: 0, square: 0 }, { per: 10, area: 0, square: 0 }, { per: 12, area: 0, square: 0 }, { per: 15, area: 0, square: 0 }, { per: 17, area: 0, square: 0 }, { per: 20, area: 0, square: 0 }, { per: 22, area: 0, square: 0 }];
+            finalObject.pitch = finalObject.pitch ? finalObject.pitch : "0/12"
+            finalObject.totalSquare = 0
+            finalObject.totalArea = 0
+
+            // var measurement = null,
 
             // To make same first and end point create tempArray
             var tempArray = []
@@ -657,7 +663,12 @@
             if (finalObject && finalObject.shape && finalObject.shape.length < 0) {
                 finalObject.shape = shapes
             } else {
-                shapes.push({ path: tmpo, area: 0, unit: "sqft" })
+                let pitch = finalObject.pitch ? finalObject.pitch : "0/12"
+                shapes.push({
+                    path: tmpo, area: 0, areaWithPitch: 0, unit: "sqft",
+                    pitch: pitch,
+                    squares: 0, waste: [{ per: 0, area: 0, square: 0 }, { per: 10, area: 0, square: 0 }, { per: 12, area: 0, square: 0 }, { per: 15, area: 0, square: 0 }, { per: 17, area: 0, square: 0 }, { per: 20, area: 0, square: 0 }, { per: 22, area: 0, square: 0 }]
+                })
                 finalObject.shape = shapes
             }
 

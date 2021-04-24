@@ -29,7 +29,7 @@
       </div>
     </div>
 
-    <div id="colorSelection">
+    <div id="colorSelection" class="facets-section">
       <p>Edges tool</p>
       <div v-for="(display, idx) in colors" :key="idx">
         <div
@@ -42,11 +42,13 @@
       </div>
       <div class="name">
         <button @click="handleRemove()" class="delete cm-btn">
+          <span><img src="../../../../public/images/cancel.svg" /></span>
           Delete Edge
         </button>
       </div>
       <div class="name">
         <button @click="handleModal" class="delete cm-btn">
+          <span><img src="../../../../public/images/trash.svg" /></span>
           Delete All Edges
         </button>
       </div>

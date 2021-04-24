@@ -30,6 +30,7 @@
     "vue": "^2.6.10",
     "vue-echarts": "^4.0.3",
     "vue-router": "^3.0.7",
+    "vue-toasted": "^1.1.28",
     "vuex": "^3.0.1",
     "vuex-persistedstate": "^2.5.4"
   },

@@ -14,12 +14,28 @@
     </button>
     <div id="myMap"></div>
     <canvas id="canvas" width="1600px" height="1500px"></canvas>
+    <div id="colorSelection" class="facets-section">
+      <p>Facets Tools</p>
+
+      <div v-for="(display, idx) in pitches" :key="idx">
+        <div class="name">
+          <div class="text-right">
+            {{ display.pitch }}
+            <img
+              :src="fullScreen"
+              @click="clickIn && handlePitch(display.pitch, display.multiplier)"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import fullScreen from "../../../../public/images/full-screen.svg";
 import {
   drawShapefunction,
   initLat,
@@ -33,6 +49,31 @@ export default {
   name: "LeafletMap",
   data() {
     return {
+      fullScreen: fullScreen,
+      pitches: [
+        { pitch: "0/12", multiplier: 1 },
+        { pitch: "1/12", multiplier: 1.003 },
+        { pitch: "2/12", multiplier: 1.014 },
+        { pitch: "3/12", multiplier: 1.031 },
+        { pitch: "4/12", multiplier: 1.054 },
+        { pitch: "5/12", multiplier: 1.083 },
+        { pitch: "6/12", multiplier: 1.118 },
+        { pitch: "7/12", multiplier: 1.158 },
+        { pitch: "8/12", multiplier: 1.202 },
+        { pitch: "8/12", multiplier: 1.25 },
+        { pitch: "10/12", multiplier: 1.302 },
+        { pitch: "11/12", multiplier: 1.357 },
+        { pitch: "12/12", multiplier: 1.414 },
+        { pitch: "13/12", multiplier: 1.474 },
+        { pitch: "14/12", multiplier: 1.537 },
+        { pitch: "15/12", multiplier: 1.601 },
+        { pitch: "16/12", multiplier: 1.667 },
+        { pitch: "17/12", multiplier: 1.734 },
+        { pitch: "18/12", multiplier: 1.803 },
+        { pitch: "19/12", multiplier: 1.873 },
+        { pitch: "20/12", multiplier: 1.944 },
+      ],
+      selectedPitch: { pitch: "0/12", multiplier: 1 },
       finalObject: null,
       selectedColor: null,
       map: null,
@@ -41,14 +82,44 @@ export default {
       zoom: initZoom,
       imgElement: null,
       polyData: [],
-      totalArea: 0,
-      area: 0,
+      clickIn: true,
     };
   },
   mounted() {
     this.initMap();
   },
   methods: {
+    totalAreaCalculation() {
+      var totalArea = 0;
+      if (
+        this.finalObject &&
+        this.finalObject.shape &&
+        this.finalObject.shape.length > 0
+      ) {
+        this.finalObject.shape.map((shapes) => {
+          totalArea += shapes.areaWithPitch;
+        });
+        this.finalObject.totalArea = parseFloat(Math.round(totalArea));
+        this.finalObject.unit = "sqft";
+
+        this.finalObject.pitch =
+          this.selectedPitch.pitch !== "0/12"
+            ? this.selectedPitch.pitch
+            : this.finalObject.pitch;
+        this.finalObject.totalSquare = this.squaresOfShingles(
+          this.finalObject.totalArea
+        );
+        this.finalObject.wasteDetail.map((wstDetail) => {
+          wstDetail.area = this.areaWithWaste(
+            this.finalObject.totalArea,
+            wstDetail.per
+          );
+
+          wstDetail.square = this.squaresOfShinglesWithWaste(wstDetail.area);
+        });
+      }
+      return this.finalObject;
+    },
     initMap() {
       var vueInstance = this;
       var _finalObject = JSON.parse(
@@ -87,14 +158,14 @@ export default {
       this.polyData = JSON.parse(localStorage.getItem("polygon")) || [];
 
       // ----- polygon draw ------
-
+      let polygon;
       this.polyData &&
         this.polyData.map((shape) => {
           if (
             shape[0][0] == shape[shape.length - 1][0] &&
             shape[0][1] == shape[shape.length - 1][1]
           ) {
-            L.polygon([shape], {
+            polygon = L.polygon([shape], {
               showMeasurements: true,
               color: "#1e0fff",
               dashArray: "5 5",
@@ -109,6 +180,7 @@ export default {
       this.map.on("zoomend", function (e) {
         localStorage.setItem("zoom", e.target._zoom);
       });
+
       // setting out the area measurements
       this.map.eachLayer((layer) => {
         if (layer._latlngs) {
@@ -125,22 +197,43 @@ export default {
                       _finalObject.shape[i].area = Math.round(
                         10.764 * L.GeometryUtil.geodesicArea(layer._latlngs[0])
                       );
+
+                      let shapeArea =
+                        _finalObject.shape[i].areaWithPitch === 0
+                          ? _finalObject.shape[i].area
+                          : _finalObject.shape[i].areaWithPitch;
+
+                      _finalObject.shape[
+                        i
+                      ].areaWithPitch = this.handleAreaWithPitch(
+                        shapeArea,
+                        _finalObject
+                      );
+
                       _finalObject.shape[i].unit = "sqft";
+                      _finalObject.shape[i].pitch =
+                        _finalObject.shape[i].pitch !== "0/12"
+                          ? _finalObject.pitch
+                          : this.selectedPitch.pitch;
+                      _finalObject.shape[i].squares = this.squaresOfShingles(
+                        _finalObject.shape[i].areaWithPitch
+                      );
                     }
                   });
+              });
+
+              _finalObject.shape[i].waste.map((wst) => {
+                wst.area = this.areaWithWaste(
+                  _finalObject.shape[i].areaWithPitch,
+                  wst.per
+                );
+                wst.square = this.squaresOfShinglesWithWaste(wst.area);
               });
             });
         }
       });
-
-      var totalArea = 0;
-      if (_finalObject && _finalObject.shape && _finalObject.shape.length > 0) {
-        _finalObject.shape.map((shapes) => {
-          totalArea += shapes.area;
-        });
-        _finalObject.totalArea = parseFloat(Math.round(totalArea));
-        _finalObject.unit = "sqft";
-      }
+      this.finalObject = _finalObject;
+      this.totalAreaCalculation();
 
       if (_finalObject && _finalObject.shape && _finalObject.shape.length > 0) {
         this.drawShape(
@@ -157,6 +250,55 @@ export default {
       localStorage.setItem("finalObject", JSON.stringify(_finalObject));
       // ------ polyline end
     },
+    handlePitch(pitch, multiplier) {
+      this.$toasted.show(`Selected pitch is ${pitch} !`, {
+        action: [
+          {
+            text: "Done",
+            onClick: (e, toast) => {
+              toast.goAway(0);
+              this.clickIn = true;
+              this.selectedPitch = { pitch: pitch, multiplier: multiplier };
+              this.finalObject.shape &&
+                this.finalObject.shape.length > 0 &&
+                this.finalObject.shape.map((shapes, i) => {
+                  let shapeArea = this.finalObject.shape[i].area;
+                  this.finalObject.shape[
+                    i
+                  ].areaWithPitch = this.handleAreaWithPitch(
+                    shapeArea,
+                    this.finalObject
+                  );
+                  this.finalObject.shape[i].pitch = this.selectedPitch.pitch;
+                  this.finalObject.shape[i].squares = this.squaresOfShingles(
+                    this.finalObject.shape[i].areaWithPitch
+                  );
+                  this.finalObject.shape[i].waste.map((wst) => {
+                    wst.area = this.areaWithWaste(
+                      this.finalObject.shape[i].areaWithPitch,
+                      wst.per
+                    );
+                    wst.square = this.squaresOfShinglesWithWaste(wst.area);
+                  });
+                });
+              this.totalAreaCalculation();
+              localStorage.setItem(
+                "finalObject",
+                JSON.stringify(this.finalObject)
+              );
+            },
+          },
+          {
+            text: "Cancel",
+            onClick: (e, toastObject) => {
+              toastObject.goAway(0);
+              this.clickIn = true;
+              this.selectedPitch = { pitch: "0/12", multiplier: 1 };
+            },
+          },
+        ],
+      });
+    },
     async createMapImage() {
       // DomtoImage - to take place image
       const mapElement = document.getElementById("myMap");
@@ -172,10 +314,31 @@ export default {
         width: mapElement.offsetWidth * scale,
       });
     },
+    handleAreaWithPitch(number, finalObject) {
+      // this.pitches.map((ptch) => {
+      //   if (ptch.pitch === finalObject.pitch) {
+      //     multiple = ptch.multiplier;
+      //   }
+      // });
+      // let test =
+      //   this.selectedPitch.multiplier !== 1
+      //     ? this.selectedPitch.multiplier
+      //     : multiple;
+      // let multiplier = this.selectedPitch.multiplier this.selectedPitch.multiplier ||
+      let area = Math.round(number * this.selectedPitch.multiplier);
+      return area;
+    },
     numberWithCommas(number) {
       return number.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
     },
     squaresOfShingles(number) {
+      return (Math.round((number / 100) * 100) / 100).toFixed(1);
+    },
+    areaWithWaste(number, per) {
+      let area = Math.round((per / 100 + 1) * number);
+      return area;
+    },
+    squaresOfShinglesWithWaste(number) {
       return (Math.round((number / 100) * 100) / 100).toFixed(1);
     },
     async handlePdf() {
@@ -230,10 +393,11 @@ export default {
 
       _printData.shape.length > 0 &&
         _printData.shape.map((latlng, i) => {
-          if (latlng.area != 0) {
+          if (latlng.areaWithPitch != 0) {
             areaTable.push({
               index: `Shape - ${i}`,
-              area: this.numberWithCommas(latlng.area) + " " + latlng.unit,
+              area:
+                this.numberWithCommas(latlng.areaWithPitch) + " " + latlng.unit,
               totalArea:
                 this.numberWithCommas(this.finalObject.totalArea) +
                 " " +
@@ -297,22 +461,27 @@ export default {
       doc.setFontSize(14);
       doc.setTextColor("Gray");
       doc.text(_printData && _printData.address, 15, 65);
-      doc.text(`${_printData.totalFacets} facets`, 188, 70, {
+      doc.text(`${_printData.totalFacets} facets`, 188, 73, {
         maxWidth: 50,
         align: "right",
       });
       doc.text(
         `${this.numberWithCommas(_printData.totalArea)} ${_printData.unit}`,
         188,
-        78,
+        80,
         { maxWidth: 50, align: "right" }
       );
+
+      doc.text(`Predominant Pitch ${_printData.pitch}`, 188, 87, {
+        maxWidth: 50,
+        align: "right",
+      });
       //Place image
       doc.addImage(
         await imageUrl(this.lat, this.lng, false),
         "PNG",
         20,
-        84,
+        97,
         170,
         150
       );
@@ -370,7 +539,6 @@ export default {
             doc.addPage();
             header();
             footer();
-
             doc.setFontSize(16);
             doc.setTextColor("#259ad7");
             doc.text(`Structure #${i} Summary`, 15, 20);
@@ -442,12 +610,42 @@ export default {
               );
               doc.text(
                 `Total Roof Area ${
-                  this.numberWithCommas(shp.area) + " " + shp.unit
+                  this.numberWithCommas(shp.areaWithPitch) + " " + shp.unit
                 }`,
                 140,
                 stayY + 30
               );
             }
+
+            doc.setFontSize(14);
+            doc.setTextColor("#259ad7");
+            doc.setFillColor("#DCDCDC");
+            // Pitch detail
+            doc.rect(18, 166, doc.internal.pageSize.width - 38, 9, "F");
+            doc.text(`Pitch`, 20, 172);
+            doc.text(`${this.selectedPitch.pitch}`, 60, 172);
+            doc.setTextColor("Gray");
+            doc.text(`Area ${shp.unit}`, 20, 182);
+            doc.text(this.numberWithCommas(shp.areaWithPitch), 60, 182);
+            doc.text(`Squares`, 20, 192);
+            doc.text(shp.squares, 60, 192);
+            // Waste data
+            doc.setTextColor("#259ad7");
+            doc.setFillColor("#DCDCDC");
+            doc.rect(18, 212, doc.internal.pageSize.width - 38, 9, "F");
+            doc.text(`Waste`, 20, 218);
+            let y = 50;
+            shp.waste.map((wst) => {
+              doc.setTextColor("#259ad7");
+              doc.setFillColor("#DCDCDC");
+              doc.text(`${wst.per}%`, y, 218);
+              doc.setTextColor("Gray");
+              doc.text(this.numberWithCommas(wst.area), y, 228);
+              doc.text(wst.square, y, 238);
+              y = y + 20;
+            });
+            doc.text(`Area (${_printData.unit})`, 20, 228);
+            doc.text(`Squares`, 20, 238);
           }
         });
 
@@ -535,34 +733,39 @@ export default {
           startY + 20
         );
       }
+
       // Add all shape
       this.drawShapeInPdf(context, canvasElement, doc, 30, 40, 85, 95.2);
       doc.setFontSize(14);
       doc.setTextColor("#259ad7");
       doc.setFillColor("#DCDCDC");
-
-      doc.rect(
-        18,
-        startY + canvasHeight / 2 - 6,
-        doc.internal.pageSize.width - 38,
-        9,
-        "F"
-      );
-      doc.text(`Pitch`, 20, startY + canvasHeight / 2);
-      doc.text(`0/12`, 60, startY + canvasHeight / 2);
+      // Pitch detail
+      doc.rect(18, 166, doc.internal.pageSize.width - 38, 9, "F");
+      doc.text(`Pitch`, 20, 172);
+      doc.text(`${this.selectedPitch.pitch}`, 60, 172);
       doc.setTextColor("Gray");
-      doc.text(`Area (${_printData.unit})`, 20, startY + canvasHeight / 2 + 10);
-      doc.text(
-        this.numberWithCommas(_printData.totalArea),
-        60,
-        startY + canvasHeight / 2 + 10
-      );
-      doc.text(`Squares`, 20, startY + canvasHeight / 2 + 20);
-      doc.text(
-        this.squaresOfShingles(_printData.totalArea),
-        60,
-        startY + canvasHeight / 2 + 20
-      );
+      doc.text(`Area ${_printData.unit}`, 20, 182);
+      doc.text(this.numberWithCommas(_printData.totalArea), 60, 182);
+      doc.text(`Squares`, 20, 192);
+      doc.text(this.squaresOfShingles(_printData.totalArea), 60, 192);
+      // Waste data
+      doc.setTextColor("#259ad7");
+      doc.setFillColor("#DCDCDC");
+      doc.rect(18, 212, doc.internal.pageSize.width - 38, 9, "F");
+      doc.text(`Waste`, 20, 218);
+
+      let y = 50;
+      _printData.wasteDetail.map((wstDetail) => {
+        doc.setTextColor("#259ad7");
+        doc.setFillColor("#DCDCDC");
+        doc.text(`${wstDetail.per}%`, y, 218);
+        doc.setTextColor("Gray");
+        doc.text(this.numberWithCommas(wstDetail.area), y, 228);
+        doc.text(wstDetail.square, y, 238);
+        y = y + 20;
+      });
+      doc.text(`Area (${_printData.unit})`, 20, 228);
+      doc.text(`Squares`, 20, 238);
       doc.save("map_report.pdf");
     },
     drawShape(

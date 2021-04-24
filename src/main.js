@@ -11,11 +11,12 @@ import '@/plugins/frog-ui'
 import { BootstrapVue } from 'bootstrap-vue'
 import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue/dist/bootstrap-vue.css'
-
+import Toasted from 'vue-toasted';
 require('@/style/search/style.css')
 
 
 Vue.use(BootstrapVue)
+Vue.use(Toasted)
 
 // Vue.config.productionTip = false;
 

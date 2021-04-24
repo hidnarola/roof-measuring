@@ -11,7 +11,8 @@
     right             : 25px;
     top               : 132px;
     left              : auto;
-    width             : 10%;
+    max-width         : 165px;
+    width             : 100%;
     max-height        : 355px;
     overflow          : auto;
     border-radius     : 4px;
@@ -32,8 +33,12 @@
         font-size     : 14px;
         font-family   : "Roboto", sans-serif;
         text-transform: capitalize;
-        padding       : 7px 0 7px 10px;
+        padding       : 10px 0 10px 10px;
         cursor        : pointer;
+
+        &.shadow {
+            box-shadow: 0 0 0 0.2rem #259ad740 !important;
+        }
 
         &:hover {
             background-color: #f2f2f2;
@@ -51,6 +56,48 @@
         &:focus {
             box-shadow: none;
             outline   : none;
+        }
+    }
+
+    &.facets-section {
+        .cm-btn {
+            display    : flex;
+            align-items: center;
+            line-height: 1;
+
+            span {
+                img {
+                    width       : 17px;
+                    margin-right: 0.5rem;
+
+                    &:hover {
+                        filter: invert(0%) sepia(23%) saturate(379%) hue-rotate(237deg) brightness(127%) contrast(0%);
+                    }
+                }
+            }
+
+        }
+
+        .name {
+            &.shadow {
+                box-shadow: 0 0 0 0.2rem #259ad740 !important;
+            }
+
+            .text-right {
+                padding-left   : 25px;
+                display        : flex;
+                align-items    : center;
+                justify-content: space-between;
+                padding-right  : 15px;
+
+                img {
+                    width: 14px;
+
+                    &:hover {
+                        filter: invert(93%) sepia(0%) saturate(448%) hue-rotate(271deg) brightness(97%) contrast(75%);
+                    }
+                }
+            }
         }
     }
 }
@@ -91,6 +138,7 @@
 .bg-Rakes {
     border-color: #ffcc0f;
 }
+
 .confirmation_popup {
     position  : fixed;
     left      : 0;
@@ -191,6 +239,6 @@ button.download-pdf-btn {
 }
 
 
-#canvas{
+#canvas {
     display: none;
 }
