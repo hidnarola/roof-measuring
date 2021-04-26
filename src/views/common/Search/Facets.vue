@@ -88,6 +88,7 @@ export default {
   mounted() {
     this.initMap();
   },
+
   methods: {
     totalAreaCalculation() {
       var totalArea = 0;
@@ -97,7 +98,13 @@ export default {
         this.finalObject.shape.length > 0
       ) {
         this.finalObject.shape.map((shapes) => {
-          totalArea += shapes.areaWithPitch;
+          if (
+            shapes.path[0][0].lat ===
+              shapes.path[shapes.path.length - 1][1].lat &&
+            shapes.path[0][0].lng === shapes.path[shapes.path.length - 1][1].lng
+          ) {
+            totalArea += shapes.areaWithPitch;
+          }
         });
         this.finalObject.totalArea = parseFloat(Math.round(totalArea));
         this.finalObject.unit = "sqft";
@@ -109,6 +116,7 @@ export default {
         this.finalObject.totalSquare = this.squaresOfShingles(
           this.finalObject.totalArea
         );
+
         this.finalObject.wasteDetail.map((wstDetail) => {
           wstDetail.area = this.areaWithWaste(
             this.finalObject.totalArea,
@@ -198,23 +206,19 @@ export default {
                         10.764 * L.GeometryUtil.geodesicArea(layer._latlngs[0])
                       );
 
-                      let shapeArea =
-                        _finalObject.shape[i].areaWithPitch === 0
-                          ? _finalObject.shape[i].area
-                          : _finalObject.shape[i].areaWithPitch;
-
-                      _finalObject.shape[
-                        i
-                      ].areaWithPitch = this.handleAreaWithPitch(
-                        shapeArea,
-                        _finalObject
-                      );
-
                       _finalObject.shape[i].unit = "sqft";
                       _finalObject.shape[i].pitch =
                         _finalObject.shape[i].pitch !== "0/12"
                           ? _finalObject.pitch
                           : this.selectedPitch.pitch;
+
+                      let shapeArea = _finalObject.shape[i].area;
+                      _finalObject.shape[
+                        i
+                      ].areaWithPitch = this.handleAreaWithPitch(
+                        shapeArea,
+                        _finalObject.shape[i].pitch
+                      );
                       _finalObject.shape[i].squares = this.squaresOfShingles(
                         _finalObject.shape[i].areaWithPitch
                       );
@@ -263,13 +267,13 @@ export default {
                 this.finalObject.shape.length > 0 &&
                 this.finalObject.shape.map((shapes, i) => {
                   let shapeArea = this.finalObject.shape[i].area;
+                  this.finalObject.shape[i].pitch = this.selectedPitch.pitch;
                   this.finalObject.shape[
                     i
                   ].areaWithPitch = this.handleAreaWithPitch(
                     shapeArea,
-                    this.finalObject
+                    this.finalObject.shape[i].pitch
                   );
-                  this.finalObject.shape[i].pitch = this.selectedPitch.pitch;
                   this.finalObject.shape[i].squares = this.squaresOfShingles(
                     this.finalObject.shape[i].areaWithPitch
                   );
@@ -281,6 +285,8 @@ export default {
                     wst.square = this.squaresOfShinglesWithWaste(wst.area);
                   });
                 });
+              // this.finalObject.projectionLength = this.selectedPitch.multiplier;
+
               this.totalAreaCalculation();
               localStorage.setItem(
                 "finalObject",
@@ -314,17 +320,12 @@ export default {
         width: mapElement.offsetWidth * scale,
       });
     },
-    handleAreaWithPitch(number, finalObject) {
-      // this.pitches.map((ptch) => {
-      //   if (ptch.pitch === finalObject.pitch) {
-      //     multiple = ptch.multiplier;
-      //   }
-      // });
-      // let test =
-      //   this.selectedPitch.multiplier !== 1
-      //     ? this.selectedPitch.multiplier
-      //     : multiple;
-      // let multiplier = this.selectedPitch.multiplier this.selectedPitch.multiplier ||
+    handleAreaWithPitch(number, pitch) {
+      this.pitches.map((ptch) => {
+        if (ptch.pitch === pitch) {
+          this.selectedPitch.multiplier = ptch.multiplier;
+        }
+      });
       let area = Math.round(number * this.selectedPitch.multiplier);
       return area;
     },
@@ -394,15 +395,24 @@ export default {
       _printData.shape.length > 0 &&
         _printData.shape.map((latlng, i) => {
           if (latlng.areaWithPitch != 0) {
-            areaTable.push({
-              index: `Shape - ${i}`,
-              area:
-                this.numberWithCommas(latlng.areaWithPitch) + " " + latlng.unit,
-              totalArea:
-                this.numberWithCommas(this.finalObject.totalArea) +
-                " " +
-                this.finalObject.unit,
-            });
+            if (
+              latlng.path[0][0].lat ===
+                latlng.path[latlng.path.length - 1][1].lat &&
+              latlng.path[0][0].lng ===
+                latlng.path[latlng.path.length - 1][1].lng
+            ) {
+              areaTable.push({
+                index: `Shape - ${i}`,
+                area:
+                  this.numberWithCommas(latlng.areaWithPitch) +
+                  " " +
+                  latlng.unit,
+                totalArea:
+                  this.numberWithCommas(this.finalObject.totalArea) +
+                  " " +
+                  this.finalObject.unit,
+              });
+            }
           }
         });
 
@@ -534,14 +544,20 @@ export default {
 
       _printData.shape.length > 1 &&
         _printData.shape.map((shp, i) => {
-          if (shp.area != 0) {
+          let count = 1;
+          if (
+            shp.area != 0 &&
+            shp.path[0][0].lat === shp.path[shp.path.length - 1][1].lat &&
+            shp.path[0][0].lng === shp.path[shp.path.length - 1][1].lng
+          ) {
+            count++;
             // ------------- Structure Summary for particular Shape -----------------
             doc.addPage();
             header();
             footer();
             doc.setFontSize(16);
             doc.setTextColor("#259ad7");
-            doc.text(`Structure #${i} Summary`, 15, 20);
+            doc.text(`Structure #${count} Summary`, 15, 20);
             doc.setFontSize(11);
             doc.setTextColor("Gray");
             doc.text(_printData && _printData.address, 20, 28);

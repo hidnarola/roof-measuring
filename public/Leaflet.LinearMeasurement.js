@@ -647,8 +647,6 @@
             finalObject.totalSquare = 0
             finalObject.totalArea = 0
 
-            // var measurement = null,
-
             // To make same first and end point create tempArray
             var tempArray = []
 
@@ -720,7 +718,6 @@
                             },
                         };
                     }
-                    // shp.type = types
                     shp.type = {
                         ...types,
                         ..._.omit(
