@@ -98,13 +98,7 @@ export default {
         this.finalObject.shape.length > 0
       ) {
         this.finalObject.shape.map((shapes) => {
-          if (
-            shapes.path[0][0].lat ===
-              shapes.path[shapes.path.length - 1][1].lat &&
-            shapes.path[0][0].lng === shapes.path[shapes.path.length - 1][1].lng
-          ) {
-            totalArea += shapes.areaWithPitch;
-          }
+          totalArea += shapes.areaWithPitch;
         });
         this.finalObject.totalArea = parseFloat(Math.round(totalArea));
         this.finalObject.unit = "sqft";
@@ -285,7 +279,6 @@ export default {
                     wst.square = this.squaresOfShinglesWithWaste(wst.area);
                   });
                 });
-              // this.finalObject.projectionLength = this.selectedPitch.multiplier;
 
               this.totalAreaCalculation();
               localStorage.setItem(
@@ -392,6 +385,7 @@ export default {
       var areaRows = [];
       let _printData = JSON.parse(JSON.stringify(this.finalObject));
 
+      let shapeCount = 0;
       _printData.shape.length > 0 &&
         _printData.shape.map((latlng, i) => {
           if (latlng.areaWithPitch != 0) {
@@ -401,8 +395,9 @@ export default {
               latlng.path[0][0].lng ===
                 latlng.path[latlng.path.length - 1][1].lng
             ) {
+              shapeCount++;
               areaTable.push({
-                index: `Shape - ${i}`,
+                index: `Shape - ${shapeCount}`,
                 area:
                   this.numberWithCommas(latlng.areaWithPitch) +
                   " " +
@@ -542,126 +537,133 @@ export default {
       doc.autoTable(areaCol, areaRows, { startY: 40 });
       // -------------Area Measurement Report End---------
 
+      let count = 0;
       _printData.shape.length > 1 &&
         _printData.shape.map((shp, i) => {
-          let count = 1;
-          if (
-            shp.area != 0 &&
-            shp.path[0][0].lat === shp.path[shp.path.length - 1][1].lat &&
-            shp.path[0][0].lng === shp.path[shp.path.length - 1][1].lng
-          ) {
-            count++;
-            // ------------- Structure Summary for particular Shape -----------------
-            doc.addPage();
-            header();
-            footer();
-            doc.setFontSize(16);
-            doc.setTextColor("#259ad7");
-            doc.text(`Structure #${count} Summary`, 15, 20);
-            doc.setFontSize(11);
-            doc.setTextColor("Gray");
-            doc.text(_printData && _printData.address, 20, 28);
-            doc.setFontSize(14);
-            doc.setTextColor("#259ad7");
-            doc.setFillColor("#DCDCDC");
-            doc.rect(138, 34, 55, 9, "F");
-            doc.text(`Measurement`, 140, 40);
-            doc.setFontSize(13);
-            doc.setTextColor("Gray");
-            doc.text(
-              `Total Roof Facets ${
-                _printData.totalFacets / _printData.totalFacets
-              } facets`,
-              140,
-              52
-            );
-            // shape add start
-
-            // shape add start
-
-            this.drawShapeInPdf(context, canvasElement, doc, 20, 30, 80, 95, i);
-            let _EavesRakes = 0,
-              _HipsRidges = 0,
-              _lengthUnit,
-              stayY;
-
-            if (shp.type) {
-              Object.keys(shp.type).map((key, index) => {
-                doc.text(
-                  `Total ${shp.type[key].label}  ${shp.type[key].length.toFixed(
-                    2
-                  )} ${shp.type[key].unit}`,
-                  140,
-                  62 + index * 10
-                );
-                stayY = 62 + index * 10;
-                switch (key) {
-                  case "Hips":
-                    _HipsRidges += shp.type["Hips"].length;
-                    break;
-                  case "Ridges":
-                    _HipsRidges += shp.type["Ridges"].length;
-                    break;
-                  case "Eaves":
-                    _EavesRakes += shp.type["Eaves"].length;
-                    break;
-                  case "Rakes":
-                    _EavesRakes += shp.type["Rakes"].length;
-                    break;
-                  default:
-                    break;
-                }
-                _lengthUnit =
-                  shp.type[key] && shp.type[key].unit && shp.type[key].unit;
-              });
-              doc.text(
-                `Hips + Ridges  ${_HipsRidges.toFixed(2)} ${_lengthUnit}`,
-                140,
-                stayY + 10
-              );
-              doc.text(
-                `Eaves + Rakes  ${_EavesRakes.toFixed(2)} ${_lengthUnit}`,
-                140,
-                stayY + 20
-              );
-              doc.text(
-                `Total Roof Area ${
-                  this.numberWithCommas(shp.areaWithPitch) + " " + shp.unit
-                }`,
-                140,
-                stayY + 30
-              );
-            }
-
-            doc.setFontSize(14);
-            doc.setTextColor("#259ad7");
-            doc.setFillColor("#DCDCDC");
-            // Pitch detail
-            doc.rect(18, 166, doc.internal.pageSize.width - 38, 9, "F");
-            doc.text(`Pitch`, 20, 172);
-            doc.text(`${this.selectedPitch.pitch}`, 60, 172);
-            doc.setTextColor("Gray");
-            doc.text(`Area ${shp.unit}`, 20, 182);
-            doc.text(this.numberWithCommas(shp.areaWithPitch), 60, 182);
-            doc.text(`Squares`, 20, 192);
-            doc.text(shp.squares, 60, 192);
-            // Waste data
-            doc.setTextColor("#259ad7");
-            doc.setFillColor("#DCDCDC");
-            doc.rect(18, 212, doc.internal.pageSize.width - 38, 9, "F");
-            doc.text(`Waste`, 20, 218);
-            let y = 50;
-            shp.waste.map((wst) => {
+          for (var index = 0; index < this.polyData.length; index++) {
+            if (index === i) {
+              count++;
+              // ------------- Structure Summary for particular Shape -----------------
+              doc.addPage();
+              header();
+              footer();
+              doc.setFontSize(16);
+              doc.setTextColor("#259ad7");
+              doc.text(`Structure #${count} Summary`, 15, 20);
+              doc.setFontSize(11);
+              doc.setTextColor("Gray");
+              doc.text(_printData && _printData.address, 20, 28);
+              doc.setFontSize(14);
               doc.setTextColor("#259ad7");
               doc.setFillColor("#DCDCDC");
-              doc.text(`${wst.per}%`, y, 218);
+              doc.rect(138, 34, 55, 9, "F");
+              doc.text(`Measurement`, 140, 40);
+              doc.setFontSize(13);
               doc.setTextColor("Gray");
-              doc.text(this.numberWithCommas(wst.area), y, 228);
-              doc.text(wst.square, y, 238);
-              y = y + 20;
-            });
-            doc.text(`Area (${_printData.unit})`, 20, 228);
-            doc.text(`Squares`, 20, 238);
+              doc.text(
+                `Total Roof Facets ${
+                  _printData.totalFacets / _printData.totalFacets
+                } facets`,
+                140,
+                52
+              );
+              // shape add start
+
+              // shape add start
+
+              this.drawShapeInPdf(
+                context,
+                canvasElement,
+                doc,
+                20,
+                30,
+                80,
+                95,
+                i
+              );
+              let _EavesRakes = 0,
+                _HipsRidges = 0,
+                _lengthUnit,
+                stayY;
+
+              if (shp.type) {
+                Object.keys(shp.type).map((key, index) => {
+                  doc.text(
+                    `Total ${shp.type[key].label}  ${shp.type[
+                      key
+                    ].length.toFixed(2)} ${shp.type[key].unit}`,
+                    140,
+                    62 + index * 10
+                  );
+                  stayY = 62 + index * 10;
+                  switch (key) {
+                    case "Hips":
+                      _HipsRidges += shp.type["Hips"].length;
+                      break;
+                    case "Ridges":
+                      _HipsRidges += shp.type["Ridges"].length;
+                      break;
+                    case "Eaves":
+                      _EavesRakes += shp.type["Eaves"].length;
+                      break;
+                    case "Rakes":
+                      _EavesRakes += shp.type["Rakes"].length;
+                      break;
+                    default:
+                      break;
+                  }
+                  _lengthUnit =
+                    shp.type[key] && shp.type[key].unit && shp.type[key].unit;
+                });
+                doc.text(
+                  `Hips + Ridges  ${_HipsRidges.toFixed(2)} ${_lengthUnit}`,
+                  140,
+                  stayY + 10
+                );
+                doc.text(
+                  `Eaves + Rakes  ${_EavesRakes.toFixed(2)} ${_lengthUnit}`,
+                  140,
+                  stayY + 20
+                );
+                doc.text(
+                  `Total Roof Area ${
+                    this.numberWithCommas(shp.areaWithPitch) + " " + shp.unit
+                  }`,
+                  140,
+                  stayY + 30
+                );
+              }
+
+              doc.setFontSize(14);
+              doc.setTextColor("#259ad7");
+              doc.setFillColor("#DCDCDC");
+              // Pitch detail
+              doc.rect(18, 166, doc.internal.pageSize.width - 38, 9, "F");
+              doc.text(`Pitch`, 20, 172);
+              doc.text(`${_printData.pitch}`, 60, 172);
+              doc.setTextColor("Gray");
+              doc.text(`Area ${shp.unit}`, 20, 182);
+              doc.text(this.numberWithCommas(shp.areaWithPitch), 60, 182);
+              doc.text(`Squares`, 20, 192);
+              doc.text(`${shp.squares}`, 60, 192);
+              // Waste data
+              doc.setTextColor("#259ad7");
+              doc.setFillColor("#DCDCDC");
+              doc.rect(18, 212, doc.internal.pageSize.width - 38, 9, "F");
+              doc.text(`Waste`, 20, 218);
+              let y = 50;
+              shp.waste.map((wst) => {
+                doc.setTextColor("#259ad7");
+                doc.setFillColor("#DCDCDC");
+                doc.text(`${wst.per}%`, y, 218);
+                doc.setTextColor("Gray");
+                doc.text(this.numberWithCommas(wst.area), y, 228);
+                doc.text(wst.square, y, 238);
+                y = y + 20;
+              });
+              doc.text(`Area (${_printData.unit})`, 20, 228);
+              doc.text(`Squares`, 20, 238);
+            }
           }
         });
 
@@ -758,7 +760,7 @@ export default {
       // Pitch detail
       doc.rect(18, 166, doc.internal.pageSize.width - 38, 9, "F");
       doc.text(`Pitch`, 20, 172);
-      doc.text(`${this.selectedPitch.pitch}`, 60, 172);
+      doc.text(`${_printData.pitch}`, 60, 172);
       doc.setTextColor("Gray");
       doc.text(`Area ${_printData.unit}`, 20, 182);
       doc.text(this.numberWithCommas(_printData.totalArea), 60, 182);
@@ -860,7 +862,7 @@ export default {
       yPoint,
       i
     ) {
-      let boundingRect = this.getBoundingRect();
+          let boundingRect = this.getBoundingRect();
       let scale = Math.min(ctx.canvas.width, ctx.canvas.height);
 
       ctx.beginPath();
@@ -887,11 +889,9 @@ export default {
       ctx.fill();
       ctx.stroke();
       var trimmedCanvas = this.trimCanvas(canvasElement);
-
       var imgData = trimmedCanvas.toDataURL();
 
       var imgDataAll = canvasElement.toDataURL("image/png");
-
       doc.addImage(
         i !== undefined ? imgData : imgDataAll,
         "PNG",
@@ -900,7 +900,6 @@ export default {
         width,
         height
       );
-
       ctx.restore();
     },
     trimCanvas(c) {
