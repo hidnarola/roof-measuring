@@ -93,9 +93,13 @@
             me.tempPolygon = []
 
             var polygon = JSON.parse(localStorage.getItem("polygon")) || []
+            var allPoints = JSON.parse(localStorage.getItem("allPoints")) || []
 
             this.clickEventFn = function (e) {
-                // Added by ssi- start - issue - first time when click with dbl clcik then getting error of undefined
+                allPoints.push([e.latlng.lat, e.latlng.lng])
+
+                localStorage.setItem("allPoints", JSON.stringify(allPoints))
+                // Added by ssi - start - issue - first time when click with dbl clcik then getting error of undefined
 
                 if (this.poly && me.latlngsList.length === 0) {
                     me.latlngsList.push(this.latlngs);
@@ -152,6 +156,7 @@
                                 }
                             }
                         }
+
                         // Polygon pushing the data after complting the shape so removing data if shape is complete with first and last data same
                         for (let index = 0; index < polygon.length; index++) {
                             for (let j = 0; j < polygon[index].length; j++) {

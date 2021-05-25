@@ -14,6 +14,7 @@
     </button>
     <div id="myMap"></div>
     <canvas id="canvas" width="1600px" height="1500px"></canvas>
+
     <div id="colorSelection" class="facets-section">
       <p>Facets Tools</p>
 
@@ -29,6 +30,24 @@
         </div>
       </div>
     </div>
+    <table id="edges-table">
+      <thead>
+        <tr>
+          <th>Label</th>
+          <th>Color</th>
+          <th>Measurment</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(edge, idx) in edgesTable" :key="idx">
+          <td>{{ edge.label }}</td>
+          <td>
+            <span :name="edge.color"></span>
+          </td>
+          <td>{{ edge.length }}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
@@ -83,6 +102,7 @@ export default {
       imgElement: null,
       polyData: [],
       clickIn: true,
+      edgesTable: [],
     };
   },
   mounted() {
@@ -246,7 +266,7 @@ export default {
 
       this.finalObject = _finalObject;
       localStorage.setItem("finalObject", JSON.stringify(_finalObject));
-      // ------ polyline end
+      // ------------- Polyline end -------------
     },
     handlePitch(pitch, multiplier) {
       this.$toasted.show(`Selected pitch is ${pitch} !`, {
@@ -376,64 +396,42 @@ export default {
       }
 
       // Table data start to manage the polyline measurment with colors
-      var edgesTable = [];
       var areaTable = [];
 
-      var edgesCol = ["Sr. No.", "Edges", "Color", "Measurement", "Unit"];
-      var areaCol = ["Sr. No.", "Area", "Total area"];
-      var edgesRows = [];
+      var areaCol = ["Shapes", "Area", "Total area"];
       var areaRows = [];
       let _printData = JSON.parse(JSON.stringify(this.finalObject));
-
       let shapeCount = 0;
       _printData.shape.length > 0 &&
-        _printData.shape.map((latlng, i) => {
+        _printData.shape.map((latlng) => {
           if (latlng.areaWithPitch != 0) {
-            if (
-              latlng.path[0][0].lat ===
-                latlng.path[latlng.path.length - 1][1].lat &&
-              latlng.path[0][0].lng ===
-                latlng.path[latlng.path.length - 1][1].lng
-            ) {
-              shapeCount++;
-              areaTable.push({
-                index: `Shape - ${shapeCount}`,
-                area:
-                  this.numberWithCommas(latlng.areaWithPitch) +
-                  " " +
-                  latlng.unit,
-                totalArea:
-                  this.numberWithCommas(this.finalObject.totalArea) +
-                  " " +
-                  this.finalObject.unit,
-              });
-            }
+            shapeCount++;
+            areaTable.push({
+              index: `Shape - ${shapeCount}`,
+              area:
+                this.numberWithCommas(latlng.areaWithPitch) + " " + latlng.unit,
+              totalArea:
+                this.numberWithCommas(this.finalObject.totalArea) +
+                " " +
+                this.finalObject.unit,
+            });
           }
         });
 
       _printData.measurement &&
-        Object.keys(_printData.measurement).map((key, index) => {
-          edgesTable.push({
-            index: index,
+        Object.keys(_printData.measurement).map((key) => {
+          this.edgesTable.push({
             label: key,
             color: _printData.measurement[key].color,
-            length: _printData.measurement[key].length.toFixed(2),
-            unit: _printData.measurement[key].unit,
+            length: `${
+              _printData.measurement[key].length.toFixed(2) +
+              " " +
+              _printData.measurement[key].unit
+            }`,
           });
         });
 
-      edgesTable.forEach((element, i) => {
-        var temp = [
-          i,
-          element.label,
-          element.color,
-          element.length,
-          element.unit,
-        ];
-        edgesRows.push(temp);
-      });
-
-      areaTable.forEach((element, i) => {
+      areaTable.forEach((element) => {
         var temp1 = [element.index, element.area, element.totalArea];
         areaRows.push(temp1);
       });
@@ -520,7 +518,27 @@ export default {
       doc.setFontSize(12);
       doc.setTextColor("gray");
       doc.text(_printData && _printData.address, 10, 28);
-      doc.autoTable(edgesCol, edgesRows, { startY: 40 });
+
+      doc.autoTable({
+        html: "#edges-table",
+        startY: 40,
+        bodyStyles: { minCellHeight: 10 },
+        didDrawCell: function (data) {
+          if (data.column.index === 1 && data.cell.section === "body") {
+            var td = data.cell.raw;
+            var span = td.getElementsByTagName("span")[0];
+            var textPos = data.cell;
+            doc.setLineWidth(2);
+            doc.setDrawColor(span.getAttribute("name"));
+            doc.line(
+              textPos.x + 2,
+              textPos.y + 5,
+              textPos.x + 11,
+              textPos.y + 5
+            );
+          }
+        },
+      });
 
       // -------------Area Measurement Report---------
       doc.addPage();
@@ -535,11 +553,24 @@ export default {
       doc.setFontSize(12);
       doc.setTextColor("gray");
       doc.autoTable(areaCol, areaRows, { startY: 40 });
-      // -------------Area Measurement Report End---------
-
+      // ------------- Area Measurement Report End ---------
+      let boundingRect = this.getBoundingRect();
+      let scale = Math.min(context.canvas.width, context.canvas.height);
+      let gmapPolygons = this.polyData.map((polyData) => {
+        const polyCord = polyData.map((plData) => {
+          return { lat: plData[0], lng: plData[1] };
+        });
+        return new window.google.maps.Polygon({ paths: polyCord });
+      });
+      let lineStart, lineEnd;
       let count = 0;
       _printData.shape.length > 1 &&
         _printData.shape.map((shp, i) => {
+          context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+          context.save();
+
+          context.translate(80, 95 * 15.8);
+          context.rotate((Math.PI / 180) * -89);
           for (var index = 0; index < this.polyData.length; index++) {
             if (index === i) {
               count++;
@@ -571,16 +602,69 @@ export default {
 
               // shape add start
 
-              this.drawShapeInPdf(
-                context,
-                canvasElement,
-                doc,
-                20,
-                30,
-                80,
-                95,
-                i
-              );
+              // this.drawShapeInPdf(
+              //   context,
+              //   canvasElement,
+              //   doc,
+              //   20,
+              //   30,
+              //   80,
+              //   95,
+              //   true,
+              //   i
+              // );
+
+              shp.path.forEach((line) => {
+                lineStart = new window.google.maps.LatLng(
+                  line[0].lat,
+                  line[0].lng
+                );
+                lineEnd = new window.google.maps.LatLng(
+                  line[1].lat,
+                  line[1].lng
+                );
+
+                for (
+                  let polygonI = 0;
+                  polygonI < gmapPolygons.length;
+                  polygonI++
+                ) {
+                  if (
+                    setTimeout(function () {
+                      window.google.maps.geometry.poly.containsLocation(
+                        lineStart,
+                        gmapPolygons[polygonI]
+                      ) ||
+                        window.google.maps.geometry.poly.containsLocation(
+                          lineEnd,
+                          gmapPolygons[polygonI]
+                        );
+                    }, 1000)
+                  ) {
+                    let a1 =
+                      ((line[0].lat - boundingRect.x) / boundingRect.width) *
+                      scale;
+                    let b1 =
+                      ((line[0].lng - boundingRect.y) / boundingRect.height) *
+                      scale;
+                    let a2 =
+                      ((line[1].lat - boundingRect.x) / boundingRect.width) *
+                      scale;
+                    let b2 =
+                      ((line[1].lng - boundingRect.y) / boundingRect.height) *
+                      scale;
+                    context.beginPath();
+                    context.strokeStyle = line[0].color;
+                    context.lineWidth = 2;
+                    context.moveTo(a1, b1);
+                    context.lineTo(a2, b2);
+                    context.closePath();
+                    context.stroke();
+                    break;
+                  }
+                }
+              });
+
               let _EavesRakes = 0,
                 _HipsRidges = 0,
                 _lengthUnit,
@@ -665,6 +749,11 @@ export default {
               doc.text(`Squares`, 20, 238);
             }
           }
+
+          var trimmedCanvas = this.trimCanvas(canvasElement);
+          var imgData = trimmedCanvas.toDataURL();
+          doc.addImage(imgData, "PNG", 20, 30, 80, 95);
+          context.restore();
         });
 
       // --------- All Shape Structures Summary -------
@@ -741,7 +830,7 @@ export default {
             _printData.measurement[key].unit;
         });
         doc.text(
-          `Hips + Ridgest  ${HipsRidges.toFixed(2)} ${lengthUnit}`,
+          `Hips + Ridges  ${HipsRidges.toFixed(2)} ${lengthUnit}`,
           140,
           startY + 10
         );
@@ -819,26 +908,40 @@ export default {
       }
       return { x: left, y: top, width: right - left, height: bottom - top };
     },
-    drawShapeInPdf(ctx, canvasElement, doc, xPoint, yPoint, width, height, i) {
+    drawShapeInPdf(
+      ctx,
+      canvasElement,
+      doc,
+      xPoint,
+      yPoint,
+      width,
+      height,
+      isSingleShape = false,
+      finalPolygonIndex
+    ) {
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      for (var index = 0; index < this.polyData.length; index++) {
-        if (i !== undefined) {
-          if (index === i) {
-            this.contextDraw(
-              index,
-              ctx,
-              width,
-              height,
-              canvasElement,
-              doc,
-              20,
-              40,
-              i
-            );
+      for (
+        var polygonIndex = 0;
+        polygonIndex < this.polyData.length;
+        polygonIndex++
+      ) {
+        if (isSingleShape) {
+          if (polygonIndex === finalPolygonIndex) {
+            // this.contextDraw(
+            //   polygonIndex,
+            //   ctx,
+            //   width,
+            //   height,
+            //   canvasElement,
+            //   doc,
+            //   20,
+            //   40,
+            //   isSingleShape
+            // );
           }
         } else {
           this.contextDraw(
-            index,
+            polygonIndex,
             ctx,
             width,
             height,
@@ -852,7 +955,7 @@ export default {
     },
 
     contextDraw(
-      index,
+      polygonIndex,
       ctx,
       width,
       height,
@@ -860,47 +963,109 @@ export default {
       doc,
       xPoint,
       yPoint,
-      i
+      isSingleShape = false
     ) {
-          let boundingRect = this.getBoundingRect();
+      let boundingRect = this.getBoundingRect();
       let scale = Math.min(ctx.canvas.width, ctx.canvas.height);
 
-      ctx.beginPath();
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      ctx.save();
+      // ctx.beginPath();
+      // ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      // ctx.save();
 
-      ctx.translate(width, height * 15.8);
-      ctx.rotate((Math.PI / 180) * -89);
+      // ctx.translate(width, height * 15.8);
+      // ctx.rotate((Math.PI / 180) * -89);
 
-      for (var j = 0; j < this.polyData[index].length; j++) {
-        let x =
-          ((this.polyData[index][j][0] - boundingRect.x) / boundingRect.width) *
-          scale;
-        let y =
-          ((this.polyData[index][j][1] - boundingRect.y) /
-            boundingRect.height) *
-          scale;
-        ctx.strokeStyle = "#259ad7";
-        ctx.lineWidth = 2;
-        ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-      ctx.fillStyle = "#DCDCDC";
-      ctx.fill();
-      ctx.stroke();
-      var trimmedCanvas = this.trimCanvas(canvasElement);
-      var imgData = trimmedCanvas.toDataURL();
+      // for (var j = 0; j < this.polyData[polygonIndex].length; j++) {
+      //   let x =
+      //     ((this.polyData[polygonIndex][j][0] - boundingRect.x) / boundingRect.width) *
+      //     scale;
+      //   let y =
+      //     ((this.polyData[polygonIndex][j][1] - boundingRect.y) /
+      //       boundingRect.height) *
+      //     scale;
+      //   ctx.strokeStyle = "#259ad7";
+      //   ctx.lineWidth = 2;
+      //   ctx.lineTo(x, y);
+      // }
+      // ctx.closePath();
+      // ctx.fillStyle = "#DCDCDC";
+      // ctx.fill();
+      // ctx.stroke();
+      // var trimmedCanvas = this.trimCanvas(canvasElement);
+      // var imgData = trimmedCanvas.toDataURL();
 
-      var imgDataAll = canvasElement.toDataURL("image/png");
-      doc.addImage(
-        i !== undefined ? imgData : imgDataAll,
-        "PNG",
-        xPoint,
-        yPoint,
-        width,
-        height
-      );
-      ctx.restore();
+      // var imgDataAll = canvasElement.toDataURL("image/png");
+      // doc.addImage(
+      //   i !== undefined ? imgData : imgDataAll,
+      //   "PNG",
+      //   xPoint,
+      //   yPoint,
+      //   width,
+      //   height
+      // );
+      // ctx.restore();
+
+      let gmapPolygons = this.polyData.map((polyData) => {
+        const polyCord = polyData.map((plData) => {
+          return { lat: plData[0], lng: plData[1] };
+        });
+        return new window.google.maps.Polygon({ paths: polyCord });
+      });
+
+      this.finalObject.shape.map((shp) => {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.save();
+
+        ctx.translate(width, height * 15.8);
+        ctx.rotate((Math.PI / 180) * -89);
+
+        shp.path.forEach((line) => {
+          let lineStart = new window.google.maps.LatLng(
+            line[0].lat,
+            line[0].lng
+          );
+          let lineEnd = new window.google.maps.LatLng(line[1].lat, line[1].lng);
+
+          for (let polygonI = 0; polygonI < gmapPolygons.length; polygonI++) {
+            if (
+              setTimeout(function () {
+                window.google.maps.geometry.poly.containsLocation(
+                  lineStart,
+                  gmapPolygons[polygonI]
+                ) ||
+                  window.google.maps.geometry.poly.containsLocation(
+                    lineEnd,
+                    gmapPolygons[polygonI]
+                  );
+              }, 1000)
+            ) {
+              let a1 =
+                ((line[0].lat - boundingRect.x) / boundingRect.width) * scale;
+              let b1 =
+                ((line[0].lng - boundingRect.y) / boundingRect.height) * scale;
+              let a2 =
+                ((line[1].lat - boundingRect.x) / boundingRect.width) * scale;
+              let b2 =
+                ((line[1].lng - boundingRect.y) / boundingRect.height) * scale;
+
+              ctx.beginPath();
+              ctx.strokeStyle = "#259ad7";
+              ctx.lineWidth = 2;
+              ctx.moveTo(a1, b1);
+              ctx.lineTo(a2, b2);
+              ctx.fillStyle = "#DCDCDC";
+              ctx.fill();
+              ctx.stroke();
+              break;
+            }
+          }
+        });
+
+        var imgDataAll = canvasElement.toDataURL("image/png");
+
+        doc.addImage(imgDataAll, "PNG", xPoint, yPoint, width, height);
+        ctx.restore();
+      });
     },
     trimCanvas(c) {
       var ctx = c.getContext("2d"),
