@@ -30,7 +30,7 @@
         </div>
       </div>
     </div>
-    <table id="edges-table">
+    <table id="edges-table" style="display: none">
       <thead>
         <tr>
           <th>Label</th>
@@ -48,6 +48,9 @@
         </tr>
       </tbody>
     </table>
+    <div v-if="isLoading">
+      <Loader />
+    </div>
   </div>
 </template>
 
@@ -64,8 +67,10 @@ import {
   setAddress,
 } from "../../../shared/shared";
 
+import Loader from "../Search/Loader";
 export default {
   name: "LeafletMap",
+  components: { Loader },
   data() {
     return {
       fullScreen: fullScreen,
@@ -103,6 +108,7 @@ export default {
       polyData: [],
       clickIn: true,
       edgesTable: [],
+      isLoading: false,
     };
   },
   mounted() {
@@ -227,12 +233,11 @@ export default {
                           : this.selectedPitch.pitch;
 
                       let shapeArea = _finalObject.shape[i].area;
-                      _finalObject.shape[
-                        i
-                      ].areaWithPitch = this.handleAreaWithPitch(
-                        shapeArea,
-                        _finalObject.shape[i].pitch
-                      );
+                      _finalObject.shape[i].areaWithPitch =
+                        this.handleAreaWithPitch(
+                          shapeArea,
+                          _finalObject.shape[i].pitch
+                        );
                       _finalObject.shape[i].squares = this.squaresOfShingles(
                         _finalObject.shape[i].areaWithPitch
                       );
@@ -263,7 +268,6 @@ export default {
           true
         );
       }
-
       this.finalObject = _finalObject;
       localStorage.setItem("finalObject", JSON.stringify(_finalObject));
       // ------------- Polyline end -------------
@@ -282,12 +286,11 @@ export default {
                 this.finalObject.shape.map((shapes, i) => {
                   let shapeArea = this.finalObject.shape[i].area;
                   this.finalObject.shape[i].pitch = this.selectedPitch.pitch;
-                  this.finalObject.shape[
-                    i
-                  ].areaWithPitch = this.handleAreaWithPitch(
-                    shapeArea,
-                    this.finalObject.shape[i].pitch
-                  );
+                  this.finalObject.shape[i].areaWithPitch =
+                    this.handleAreaWithPitch(
+                      shapeArea,
+                      this.finalObject.shape[i].pitch
+                    );
                   this.finalObject.shape[i].squares = this.squaresOfShingles(
                     this.finalObject.shape[i].areaWithPitch
                   );
@@ -355,8 +358,97 @@ export default {
     squaresOfShinglesWithWaste(number) {
       return (Math.round((number / 100) * 100) / 100).toFixed(1);
     },
+    feetAndInch(length, isShape = false) {
+      let feet = Math.floor(length);
+      let inches = Math.ceil((length - feet) * 12);
+      return isShape
+        ? feet + "'" + inches + '"'
+        : length < 1
+        ? feet + "ft"
+        : feet + "ft " + inches + "in";
+    },
+    shapeWithMeasurement(
+      shp,
+      gmapPolygons,
+      boundingRect,
+      scale,
+      context,
+      _printData,
+      canvasElement,
+      doc,
+      x,
+      y,
+      width,
+      height
+    ) {
+      let lineStart, lineEnd;
+      context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+      context.save();
+      context.translate(80, 95 * 15.8);
+      context.rotate((Math.PI / 180) * -89);
+      shp.path.forEach((line) => {
+        lineStart = new window.google.maps.LatLng(line[0].lat, line[0].lng);
+        lineEnd = new window.google.maps.LatLng(line[1].lat, line[1].lng);
+        for (let polygonI = 0; polygonI < gmapPolygons.length; polygonI++) {
+          if (
+            setTimeout(() => {
+              window.google.maps.geometry.poly.containsLocation(
+                lineStart,
+                gmapPolygons[polygonI]
+              ) ||
+                window.google.maps.geometry.poly.containsLocation(
+                  lineEnd,
+                  gmapPolygons[polygonI]
+                );
+            }, 1000)
+          ) {
+            let a1 =
+              ((line[0].lat - boundingRect.x) / boundingRect.width) * scale;
+            let b1 =
+              ((line[0].lng - boundingRect.y) / boundingRect.height) * scale;
+            let a2 =
+              ((line[1].lat - boundingRect.x) / boundingRect.width) * scale;
+            let b2 =
+              ((line[1].lng - boundingRect.y) / boundingRect.height) * scale;
+            let fontSize = _printData.shape.length <= 1 ? 50 : 25;
+            context.font = `normal ${fontSize}px Arial`;
+
+            context.beginPath();
+            context.strokeStyle = line[0].color;
+            context.lineWidth = _printData.shape.length <= 1 ? 7 : 3;
+            context.moveTo(a1, b1);
+            context.lineTo(a2, b2);
+            context.closePath();
+            context.stroke();
+            // To keep Text on line
+            let p1 = { x: a1, y: b1 },
+              p2 = { x: a2, y: b2 };
+            var alignment = "center";
+            var dx = p2.x - p1.x;
+            var dy = p2.y - p1.y;
+            context.save();
+            context.textAlign = alignment;
+            context.translate(p1.x + dx * (1 / 2), p1.y + dy * (1 / 2));
+            context.rotate(Math.atan2(dy, dx));
+            context.fillStyle = "#202020";
+            let length = line[1].length.replace(/[^0-9\.]+/g, "");
+            context.fillText(`${this.feetAndInch(length, true)}`, 0, 0);
+            context.restore();
+            // To keep Text on line
+            break;
+          }
+        }
+      });
+
+      var trimmedCanvas = this.trimCanvas(canvasElement);
+      var imgData = trimmedCanvas.toDataURL();
+      doc.addImage(imgData, "PNG", x, y, width, height);
+      context.restore();
+    },
     async handlePdf() {
-      //PDF data
+      this.isLoading = true;
+      // this.edgesTable = []
+      // PDF data
       let canvasElement = document.getElementById("canvas");
       var context = canvasElement.getContext("2d");
 
@@ -417,17 +509,13 @@ export default {
             });
           }
         });
-
+      this.edgesTable = [];
       _printData.measurement &&
         Object.keys(_printData.measurement).map((key) => {
           this.edgesTable.push({
             label: key,
             color: _printData.measurement[key].color,
-            length: `${
-              _printData.measurement[key].length.toFixed(2) +
-              " " +
-              _printData.measurement[key].unit
-            }`,
+            length: `${this.feetAndInch(_printData.measurement[key].length)}`,
           });
         });
 
@@ -463,7 +551,7 @@ export default {
       doc.text(15, 55, "Roof Report");
       doc.setFontSize(14);
       doc.setTextColor("Gray");
-      doc.text(_printData && _printData.address, 15, 65);
+      doc.text(`${_printData && _printData.address}`, 15, 65);
       doc.text(`${_printData.totalFacets} facets`, 188, 73, {
         maxWidth: 50,
         align: "right",
@@ -498,7 +586,7 @@ export default {
       doc.text(10, 20, "Building Location");
       doc.setFontSize(11);
       doc.setTextColor("Gray");
-      doc.text(_printData && _printData.address, 20, 28);
+      doc.text(`${_printData && _printData.address}`, 20, 28);
       doc.addImage(
         await imageUrl(this.lat, this.lng, true),
         "PNG",
@@ -517,7 +605,7 @@ export default {
       doc.text(`Length Measurement Report`, 10, 20);
       doc.setFontSize(12);
       doc.setTextColor("gray");
-      doc.text(_printData && _printData.address, 10, 28);
+      doc.text(`${_printData && _printData.address}`, 10, 28);
 
       doc.autoTable({
         html: "#edges-table",
@@ -549,212 +637,235 @@ export default {
       doc.text(`Area Measurement Report`, 10, 20);
       doc.setFontSize(12);
       doc.setTextColor("gray");
-      doc.text(_printData && _printData.address, 10, 28);
+      doc.text(`${_printData && _printData.address}`, 10, 28);
       doc.setFontSize(12);
       doc.setTextColor("gray");
       doc.autoTable(areaCol, areaRows, { startY: 40 });
       // ------------- Area Measurement Report End ---------
       let boundingRect = this.getBoundingRect();
       let scale = Math.min(context.canvas.width, context.canvas.height);
+
       let gmapPolygons = this.polyData.map((polyData) => {
         const polyCord = polyData.map((plData) => {
           return { lat: plData[0], lng: plData[1] };
         });
         return new window.google.maps.Polygon({ paths: polyCord });
       });
-      let lineStart, lineEnd;
+
       let count = 0;
-      _printData.shape.length > 1 &&
-        _printData.shape.map((shp, i) => {
-          context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-          context.save();
 
-          context.translate(80, 95 * 15.8);
-          context.rotate((Math.PI / 180) * -89);
-          for (var index = 0; index < this.polyData.length; index++) {
-            if (index === i) {
-              count++;
-              // ------------- Structure Summary for particular Shape -----------------
-              doc.addPage();
-              header();
-              footer();
-              doc.setFontSize(16);
-              doc.setTextColor("#259ad7");
-              doc.text(`Structure #${count} Summary`, 15, 20);
-              doc.setFontSize(11);
-              doc.setTextColor("Gray");
-              doc.text(_printData && _printData.address, 20, 28);
-              doc.setFontSize(14);
-              doc.setTextColor("#259ad7");
-              doc.setFillColor("#DCDCDC");
-              doc.rect(138, 34, 55, 9, "F");
-              doc.text(`Measurement`, 140, 40);
-              doc.setFontSize(13);
-              doc.setTextColor("Gray");
-              doc.text(
-                `Total Roof Facets ${
-                  _printData.totalFacets / _printData.totalFacets
-                } facets`,
-                140,
-                52
-              );
-              // shape add start
+      _printData.shape.map((shp, i) => {
+        count++;
+        // ------------- Structure Summary for particular Shape -----------------
+        doc.addPage();
+        header();
+        footer();
+        doc.setFontSize(16);
+        doc.setTextColor("#259ad7");
+        doc.text(`Structure #${count} Summary`, 15, 20);
+        doc.setFontSize(11);
+        doc.setTextColor("Gray");
+        doc.text(`${_printData && _printData.address}`, 20, 28);
+        doc.setFontSize(14);
+        doc.setTextColor("#259ad7");
+        doc.setFillColor("#DCDCDC");
+        doc.rect(138, 34, 55, 9, "F");
+        doc.text(`Measurement`, 140, 40);
+        doc.setFontSize(13);
+        doc.setTextColor("Gray");
+        doc.text(
+          `Total Roof Facets ${
+            _printData.totalFacets / _printData.totalFacets
+          } facets`,
+          140,
+          52
+        );
 
-              // shape add start
+        // Add shape
+        this.shapeWithMeasurement(
+          shp,
+          gmapPolygons,
+          boundingRect,
+          scale,
+          context,
+          _printData,
+          canvasElement,
+          doc,
+          20,
+          50,
+          80,
+          90
+        );
 
-              // this.drawShapeInPdf(
-              //   context,
-              //   canvasElement,
-              //   doc,
-              //   20,
-              //   30,
-              //   80,
-              //   95,
-              //   true,
-              //   i
-              // );
+        let _EavesRakes = 0,
+          _HipsRidges = 0,
+          _lengthUnit,
+          stayY;
 
-              shp.path.forEach((line) => {
-                lineStart = new window.google.maps.LatLng(
-                  line[0].lat,
-                  line[0].lng
-                );
-                lineEnd = new window.google.maps.LatLng(
-                  line[1].lat,
-                  line[1].lng
-                );
-
-                for (
-                  let polygonI = 0;
-                  polygonI < gmapPolygons.length;
-                  polygonI++
-                ) {
-                  if (
-                    setTimeout(function () {
-                      window.google.maps.geometry.poly.containsLocation(
-                        lineStart,
-                        gmapPolygons[polygonI]
-                      ) ||
-                        window.google.maps.geometry.poly.containsLocation(
-                          lineEnd,
-                          gmapPolygons[polygonI]
-                        );
-                    }, 1000)
-                  ) {
-                    let a1 =
-                      ((line[0].lat - boundingRect.x) / boundingRect.width) *
-                      scale;
-                    let b1 =
-                      ((line[0].lng - boundingRect.y) / boundingRect.height) *
-                      scale;
-                    let a2 =
-                      ((line[1].lat - boundingRect.x) / boundingRect.width) *
-                      scale;
-                    let b2 =
-                      ((line[1].lng - boundingRect.y) / boundingRect.height) *
-                      scale;
-                    context.beginPath();
-                    context.strokeStyle = line[0].color;
-                    context.lineWidth = 2;
-                    context.moveTo(a1, b1);
-                    context.lineTo(a2, b2);
-                    context.closePath();
-                    context.stroke();
-                    break;
-                  }
-                }
-              });
-
-              let _EavesRakes = 0,
-                _HipsRidges = 0,
-                _lengthUnit,
-                stayY;
-
-              if (shp.type) {
-                Object.keys(shp.type).map((key, index) => {
-                  doc.text(
-                    `Total ${shp.type[key].label}  ${shp.type[
-                      key
-                    ].length.toFixed(2)} ${shp.type[key].unit}`,
-                    140,
-                    62 + index * 10
-                  );
-                  stayY = 62 + index * 10;
-                  switch (key) {
-                    case "Hips":
-                      _HipsRidges += shp.type["Hips"].length;
-                      break;
-                    case "Ridges":
-                      _HipsRidges += shp.type["Ridges"].length;
-                      break;
-                    case "Eaves":
-                      _EavesRakes += shp.type["Eaves"].length;
-                      break;
-                    case "Rakes":
-                      _EavesRakes += shp.type["Rakes"].length;
-                      break;
-                    default:
-                      break;
-                  }
-                  _lengthUnit =
-                    shp.type[key] && shp.type[key].unit && shp.type[key].unit;
-                });
-                doc.text(
-                  `Hips + Ridges  ${_HipsRidges.toFixed(2)} ${_lengthUnit}`,
-                  140,
-                  stayY + 10
-                );
-                doc.text(
-                  `Eaves + Rakes  ${_EavesRakes.toFixed(2)} ${_lengthUnit}`,
-                  140,
-                  stayY + 20
-                );
-                doc.text(
-                  `Total Roof Area ${
-                    this.numberWithCommas(shp.areaWithPitch) + " " + shp.unit
-                  }`,
-                  140,
-                  stayY + 30
-                );
-              }
-
-              doc.setFontSize(14);
-              doc.setTextColor("#259ad7");
-              doc.setFillColor("#DCDCDC");
-              // Pitch detail
-              doc.rect(18, 166, doc.internal.pageSize.width - 38, 9, "F");
-              doc.text(`Pitch`, 20, 172);
-              doc.text(`${_printData.pitch}`, 60, 172);
-              doc.setTextColor("Gray");
-              doc.text(`Area ${shp.unit}`, 20, 182);
-              doc.text(this.numberWithCommas(shp.areaWithPitch), 60, 182);
-              doc.text(`Squares`, 20, 192);
-              doc.text(`${shp.squares}`, 60, 192);
-              // Waste data
-              doc.setTextColor("#259ad7");
-              doc.setFillColor("#DCDCDC");
-              doc.rect(18, 212, doc.internal.pageSize.width - 38, 9, "F");
-              doc.text(`Waste`, 20, 218);
-              let y = 50;
-              shp.waste.map((wst) => {
-                doc.setTextColor("#259ad7");
-                doc.setFillColor("#DCDCDC");
-                doc.text(`${wst.per}%`, y, 218);
-                doc.setTextColor("Gray");
-                doc.text(this.numberWithCommas(wst.area), y, 228);
-                doc.text(wst.square, y, 238);
-                y = y + 20;
-              });
-              doc.text(`Area (${_printData.unit})`, 20, 228);
-              doc.text(`Squares`, 20, 238);
+        if (shp.type) {
+          Object.keys(shp.type).map((key, index) => {
+            doc.text(
+              `Total ${shp.type[key].label}  ${this.feetAndInch(
+                shp.type[key].length.toFixed(2)
+              )}`,
+              140,
+              62 + index * 10
+            );
+            stayY = 62 + index * 10;
+            switch (key) {
+              case "Hips":
+                _HipsRidges += shp.type["Hips"].length;
+                break;
+              case "Ridges":
+                _HipsRidges += shp.type["Ridges"].length;
+                break;
+              case "Eaves":
+                _EavesRakes += shp.type["Eaves"].length;
+                break;
+              case "Rakes":
+                _EavesRakes += shp.type["Rakes"].length;
+                break;
+              default:
+                break;
             }
-          }
+            _lengthUnit =
+              shp.type[key] && shp.type[key].unit && shp.type[key].unit;
+          });
+          doc.text(
+            `Hips + Ridges  ${this.feetAndInch(_HipsRidges.toFixed(2))}`,
+            140,
+            stayY + 10
+          );
+          doc.text(
+            `Eaves + Rakes  ${this.feetAndInch(_EavesRakes.toFixed(2))}`,
+            140,
+            stayY + 20
+          );
+          doc.text(
+            `Total Roof Area ${
+              this.numberWithCommas(shp.areaWithPitch) + " " + shp.unit
+            }`,
+            140,
+            stayY + 30
+          );
+        }
 
-          var trimmedCanvas = this.trimCanvas(canvasElement);
-          var imgData = trimmedCanvas.toDataURL();
-          doc.addImage(imgData, "PNG", 20, 30, 80, 95);
-          context.restore();
+        doc.setFontSize(14);
+        doc.setTextColor("#259ad7");
+        doc.setFillColor("#DCDCDC");
+        // Pitch detail
+        doc.rect(18, 166, doc.internal.pageSize.width - 38, 9, "F");
+        doc.text(`Pitch`, 20, 172);
+        doc.text(`${_printData.pitch}`, 60, 172);
+        doc.setTextColor("Gray");
+        doc.text(`Area ${shp.unit}`, 20, 182);
+        doc.text(this.numberWithCommas(shp.areaWithPitch), 60, 182);
+        doc.text(`Squares`, 20, 192);
+        doc.text(`${shp.squares}`, 60, 192);
+        // Waste data
+        doc.setTextColor("#259ad7");
+        doc.setFillColor("#DCDCDC");
+        doc.rect(18, 212, doc.internal.pageSize.width - 38, 9, "F");
+        doc.text(`Waste`, 20, 218);
+        let y = 50;
+        shp.waste.map((wst) => {
+          doc.setTextColor("#259ad7");
+          doc.setFillColor("#DCDCDC");
+          doc.text(`${wst.per}%`, y, 218);
+          doc.setTextColor("Gray");
+          doc.text(this.numberWithCommas(wst.area), y, 228);
+          doc.text(wst.square, y, 238);
+          y = y + 20;
         });
+        doc.text(`Area (${_printData.unit})`, 20, 228);
+        doc.text(`Squares`, 20, 238);
+      });
+
+      // 2.png Image section
+
+      count = 0;
+      _printData.shape.map((shp) => {
+        let positionY = 30;
+
+        count++;
+        // ------------- Structure Summary for particular Shape -----------------
+        doc.addPage();
+        header();
+        footer();
+        doc.setFontSize(16);
+        doc.setTextColor("#259ad7");
+        doc.text(`Measurment: Structure #${count}`, 15, 20);
+        doc.setFontSize(11);
+        doc.setTextColor("Gray");
+        doc.text(`${_printData && _printData.address}`, 20, 28);
+
+        //main box
+        doc.setDrawColor("#DCDCDC");
+        doc.setFillColor("#E8E8E8");
+        doc.rect(
+          15,
+          35,
+          doc.internal.pageSize.getWidth() - 27,
+          doc.internal.pageSize.getHeight() - 90,
+          "FD"
+        );
+        //color rectangle
+        doc.setDrawColor("#DCDCDC");
+        doc.setFillColor("#fff");
+        doc.setLineWidth(0.5);
+        doc.roundedRect(
+          20,
+          40,
+          doc.internal.pageSize.getWidth() / 7 + 10,
+          doc.internal.pageSize.getHeight() - 100,
+          1,
+          1,
+          "FD"
+        );
+
+        Object.keys(shp.type).map((key) => {
+          positionY = positionY + 20;
+          doc.setLineWidth(2.2);
+          doc.setDrawColor("#C8C8C8");
+          doc.setFillColor(shp.type[key].color);
+          doc.circle(28, positionY, 3, "FD");
+          doc.text(`${shp.type[key].label}`, 35, positionY);
+          doc.text(
+            `${this.feetAndInch(shp.type[key].length.toFixed(2))}`,
+            36,
+            positionY + 5
+          );
+        });
+        // -------image rectangle
+        doc.setDrawColor("#DCDCDC");
+        doc.setFillColor("#fff");
+        doc.setLineWidth(0.5);
+        doc.roundedRect(
+          63,
+          40,
+          doc.internal.pageSize.getWidth() - 70 - 10,
+          doc.internal.pageSize.getHeight() - 100,
+          1,
+          1,
+          "FD"
+        );
+        this.shapeWithMeasurement(
+          shp,
+          gmapPolygons,
+          boundingRect,
+          scale,
+          context,
+          _printData,
+          canvasElement,
+          doc,
+          73,
+          55,
+          80,
+          90
+        );
+      });
+
+      // 2.png Image
 
       // --------- All Shape Structures Summary -------
       doc.addPage();
@@ -765,7 +876,7 @@ export default {
       doc.text(`All Shape Structures Summary`, 15, 20);
       doc.setFontSize(11);
       doc.setTextColor("Gray");
-      doc.text(_printData && _printData.address, 20, 28);
+      doc.text(`${_printData && _printData.address}`, 20, 28);
       this.drawShapeInPdf(context, canvasElement, doc, 30, 40, 85, 95.2);
 
       // ----------- All Structures Summary ----------
@@ -777,7 +888,7 @@ export default {
       doc.text(`All Structures Summary`, 15, 20);
       doc.setFontSize(11);
       doc.setTextColor("Gray");
-      doc.text(_printData && _printData.address, 20, 28);
+      doc.text(`${_printData && _printData.address}`, 20, 28);
       doc.setFillColor("#DCDCDC");
       doc.rect(138, 34, 55, 9, "F");
       doc.setFontSize(14);
@@ -800,9 +911,9 @@ export default {
       if (_printData.measurement) {
         Object.keys(_printData.measurement).map((key, index) => {
           doc.text(
-            `Total ${key}  ${_printData.measurement[key].length.toFixed(2)} ${
-              _printData.measurement[key].unit
-            }`,
+            `Total ${key}  ${this.feetAndInch(
+              _printData.measurement[key].length.toFixed(2)
+            )}`,
             140,
             72 + index * 10
           );
@@ -830,12 +941,12 @@ export default {
             _printData.measurement[key].unit;
         });
         doc.text(
-          `Hips + Ridges  ${HipsRidges.toFixed(2)} ${lengthUnit}`,
+          `Hips + Ridges  ${this.feetAndInch(HipsRidges.toFixed(2))}`,
           140,
           startY + 10
         );
         doc.text(
-          `Eaves + Rakes  ${EavesRakes.toFixed(2)} ${lengthUnit}`,
+          `Eaves + Rakes  ${this.feetAndInch(EavesRakes.toFixed(2))}`,
           140,
           startY + 20
         );
@@ -874,6 +985,7 @@ export default {
       doc.text(`Area (${_printData.unit})`, 20, 228);
       doc.text(`Squares`, 20, 238);
       doc.save("map_report.pdf");
+      this.isLoading = false;
     },
     drawShape(
       map,
@@ -968,43 +1080,6 @@ export default {
       let boundingRect = this.getBoundingRect();
       let scale = Math.min(ctx.canvas.width, ctx.canvas.height);
 
-      // ctx.beginPath();
-      // ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      // ctx.save();
-
-      // ctx.translate(width, height * 15.8);
-      // ctx.rotate((Math.PI / 180) * -89);
-
-      // for (var j = 0; j < this.polyData[polygonIndex].length; j++) {
-      //   let x =
-      //     ((this.polyData[polygonIndex][j][0] - boundingRect.x) / boundingRect.width) *
-      //     scale;
-      //   let y =
-      //     ((this.polyData[polygonIndex][j][1] - boundingRect.y) /
-      //       boundingRect.height) *
-      //     scale;
-      //   ctx.strokeStyle = "#259ad7";
-      //   ctx.lineWidth = 2;
-      //   ctx.lineTo(x, y);
-      // }
-      // ctx.closePath();
-      // ctx.fillStyle = "#DCDCDC";
-      // ctx.fill();
-      // ctx.stroke();
-      // var trimmedCanvas = this.trimCanvas(canvasElement);
-      // var imgData = trimmedCanvas.toDataURL();
-
-      // var imgDataAll = canvasElement.toDataURL("image/png");
-      // doc.addImage(
-      //   i !== undefined ? imgData : imgDataAll,
-      //   "PNG",
-      //   xPoint,
-      //   yPoint,
-      //   width,
-      //   height
-      // );
-      // ctx.restore();
-
       let gmapPolygons = this.polyData.map((polyData) => {
         const polyCord = polyData.map((plData) => {
           return { lat: plData[0], lng: plData[1] };
@@ -1050,7 +1125,7 @@ export default {
 
               ctx.beginPath();
               ctx.strokeStyle = "#259ad7";
-              ctx.lineWidth = 2;
+              ctx.lineWidth = 5;
               ctx.moveTo(a1, b1);
               ctx.lineTo(a2, b2);
               ctx.fillStyle = "#DCDCDC";
@@ -1133,6 +1208,7 @@ export default {
   },
 };
 </script>
+
 <style lang="scss" scoped>
 @import "../../../style/search/edges.scss";
 </style>

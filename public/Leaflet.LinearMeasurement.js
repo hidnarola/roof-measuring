@@ -1,5 +1,6 @@
 
 (function () {
+
     L.Control.LinearMeasurement = L.Control.extend({
         options: {
             position: 'topleft',
@@ -93,17 +94,21 @@
             me.tempPolygon = []
 
             var polygon = JSON.parse(localStorage.getItem("polygon")) || []
-            var allPoints = JSON.parse(localStorage.getItem("allPoints")) || []
+            var allPoints = JSON.parse(localStorage.getItem("allPoints"))
 
             this.clickEventFn = function (e) {
-                allPoints.push([e.latlng.lat, e.latlng.lng])
-
-                localStorage.setItem("allPoints", JSON.stringify(allPoints))
                 // Added by ssi - start - issue - first time when click with dbl clcik then getting error of undefined
 
                 if (this.poly && me.latlngsList.length === 0) {
                     me.latlngsList.push(this.latlngs);
+                    me.allLatlng.push(this.latlngs);
+                    if (me.poly.getBounds().contains(e.latlng)) {
+                        // console.log('Hello ssi if click ');
+                    } else {
+                        // console.log('Hello ssi Else click ');
+                    }
                 }
+
                 me.tempPolygon.push([e.latlng.lat, e.latlng.lng])
 
                 if (me.clickHandle) {
@@ -142,12 +147,10 @@
                                         if (array !== undefined /* any additional error checking */) {
                                             for (var i = 0; i < array.length; i++) {
                                                 var val = array[i];
-
                                                 if (tmp[val] === undefined) {
                                                     tmp[val] = true;
                                                     result.push(val);
                                                 }
-
                                             }
                                         }
                                         return result;
@@ -196,8 +199,7 @@
             this.layer.on('click', this.clickEventFn, this);
         },
 
-        resetRuler: function (resetLayer) {
-
+        resetRuler: function (resetLayer, allPoints = []) {
 
             var map = this._map;
 
@@ -235,6 +237,7 @@
             this.total = null;
             this.lastCircle = null;
             this.tempPolygon = []
+            this.allLatlng = [...allPoints]
             /* Leaflet return distances in meters */
             this.UNIT_CONV = 1000;
             this.SUB_UNIT_CONV = 1000;
@@ -527,6 +530,9 @@
 
             if (me.poly) {
                 me.latlngsList.push(me.latlngs);
+                //ssi
+                me.allLatlng.push(me.latlngs);
+                //ssi
 
                 if (me.latlngsList.length > 2) {
                     let uniqData = _.uniqBy(me.latlngsList, function (e) {
@@ -639,14 +645,17 @@
                 }
             }
         },
-
         getDblClickHandler: function (e) {
             var azimut = '',
                 me = this;
+
+            me.allLatlng.push(me.latlngs)
+
             // ------------------- latlng for draw ------------
             var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [], totalArea: 0 }
 
-            var shapes = finalObject.shape || [], measurement = null;
+            var shapes = [...finalObject.shape && finalObject.shape.length > 0 ? finalObject.shape : []], measurement = null;
+
             finalObject.wasteDetail = [{ per: 0, area: 0, square: 0 }, { per: 10, area: 0, square: 0 }, { per: 12, area: 0, square: 0 }, { per: 15, area: 0, square: 0 }, { per: 17, area: 0, square: 0 }, { per: 20, area: 0, square: 0 }, { per: 22, area: 0, square: 0 }];
             finalObject.pitch = finalObject.pitch ? finalObject.pitch : "0/12"
             finalObject.totalSquare = 0
@@ -655,7 +664,6 @@
             // To make same first and end point create tempArray
             var tempArray = []
 
-
             var tmpo = JSON.parse(JSON.stringify(me.latlngsList))
 
             if (tmpo.length > 1) {
@@ -663,17 +671,69 @@
                 tmpo.push(tempArray)
             }
 
-            if (finalObject && finalObject.shape && finalObject.shape.length < 0) {
-                finalObject.shape = shapes
-            } else {
-                let pitch = finalObject.pitch ? finalObject.pitch : "0/12"
+            let pitch = finalObject.pitch ? finalObject.pitch : "0/12"
+            // ----------To push Corordinate with conditions that the coordinates falls inside or outside--------
+            let gmapPolygons = shapes.length > 0 && shapes.map(shapePolygon => {
+                var polyCord = shapePolygon.path.map(point => {
+                    return { lat: point[0].lat, lng: point[0].lng }
+                })
+                return new window.google.maps.Polygon({ paths: polyCord });
+            })
+            var exit = false, isTrue = true;
+            if (finalObject.shape === undefined || finalObject.shape.length == 0) {
                 shapes.push({
                     path: tmpo, area: 0, areaWithPitch: 0, unit: "sqft",
                     pitch: pitch,
                     squares: 0, waste: [{ per: 0, area: 0, square: 0 }, { per: 10, area: 0, square: 0 }, { per: 12, area: 0, square: 0 }, { per: 15, area: 0, square: 0 }, { per: 17, area: 0, square: 0 }, { per: 20, area: 0, square: 0 }, { per: 22, area: 0, square: 0 }]
                 })
-                finalObject.shape = shapes
+                finalObject.shape = [...shapes]
+            } else {
+                tmpo.map((line, index) => {
+                    let lineStart = new window.google.maps.LatLng(
+                        line[0].lat,
+                        line[0].lng
+                    );
+                    let lineEnd = new window.google.maps.LatLng(line[1].lat, line[1].lng)
+                    gmapPolygons.map((gmapPolygon, polygonI) => {
+                        if (window.google.maps.geometry.poly.containsLocation(lineStart, gmapPolygon) == true || window.google.maps.geometry.poly.containsLocation(lineEnd, gmapPolygon) == true) {
+                            isTrue = true;
+                        } else {
+                            isTrue = false;
+                        }
+
+                        if (isTrue) {
+                            finalObject.shape[polygonI].path.push(line)
+                        } else {
+
+
+                            tmpo.map((line, index) => {
+                                let pointStart = new window.google.maps.LatLng(
+                                    line[0].lat,
+                                    line[0].lng
+                                );
+                                let pointEnd = new window.google.maps.LatLng(line[1].lat, line[1].lng)
+                                for (let index = 0; index < gmapPolygons.length; index++) {
+                                    if (window.google.maps.geometry.poly.containsLocation(lineStart, gmapPolygons[index]) == true || window.google.maps.geometry.poly.containsLocation(lineEnd, gmapPolygons[index]) == true) {
+                                        exit = true
+                                        break;
+                                    }
+                                }
+                            })
+                            if (exit === false) {
+                                finalObject.shape.push({
+                                    path: tmpo, area: 0, areaWithPitch: 0, unit: "sqft",
+                                    pitch: pitch,
+                                    squares: 0, waste: [{ per: 0, area: 0, square: 0 }, { per: 10, area: 0, square: 0 }, { per: 12, area: 0, square: 0 }, { per: 15, area: 0, square: 0 }, { per: 17, area: 0, square: 0 }, { per: 20, area: 0, square: 0 }, { per: 22, area: 0, square: 0 }]
+                                })
+                                exit = true
+                            }
+                        }
+                    })
+                })
             }
+
+
+            console.log('final => ', finalObject);
 
             // Set out the finalObject
             finalObject.shape.length > 0 && finalObject.shape.map(poly => {
@@ -685,6 +745,8 @@
 
                     var feet = (distance.toFixed(4) * 3.2808).toFixed(2);
                     pl.map(p => {
+                        console.log('p.length => ', p.length);
+
                         if (!p.hasOwnProperty("color") && !p.hasOwnProperty("length") && !p.hasOwnProperty("label")) {
                             {
                                 p.color = "#1e0fff", p.label = "Unspecified", p.length = `${feet} ft`
@@ -723,6 +785,7 @@
                             },
                         };
                     }
+
                     shp.type = {
                         ...types,
                         ..._.omit(
@@ -810,6 +873,7 @@
                     })
                 })
             })
+
             localStorage.setItem("finalObject", JSON.stringify(finalObject))
 
             if (!this.total) {
@@ -882,6 +946,8 @@
                     polygon.splice(polygonDeleteId, 1)
                     me.mainLayer.removeLayer(workspace);
 
+                    // console.log('915 finalObject => ', finalObject);
+
                     localStorage.setItem("finalObject", JSON.stringify(finalObject))
                     localStorage.setItem("polygon", JSON.stringify(polygon))
                 } else {
@@ -891,7 +957,8 @@
 
             workspace.on('click', fireSelected);
             workspace.fireEvent('selected', data);
-            this.resetRuler(false);
+            // this.resetRuler(false);
+            this.resetRuler(false, me.allLatlng);
         },
         purgeLayers: function (layers) {
             for (var i in layers) {
