@@ -22,9 +22,10 @@
 .total-popup-content {
     padding         : 1px -1px;
     background-color: #4d90fe;
+    /* border-radius   : 20px; */
     border-radius   : 8px;
     color           : white;
-    font-weight     : bold;
+    /* font-weight     : bold; */
     white-space     : nowrap;
     text-align      : center;
 }

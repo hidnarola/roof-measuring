@@ -13,6 +13,7 @@ export const drawShapefunction = (map, _finalObject, selectedColor, totalFacets 
                 opacity: 1,
             }).addTo(map);
 
+            // let length = shp.path[i][1]["length"].replace(/[^0-9\.]+/g, "");
             poly.setText(`${shp.path[i][1]["length"]}`, { center: true, attributes: { fill: "yellow", } });
         }
     });
