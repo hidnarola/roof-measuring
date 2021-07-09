@@ -99,8 +99,6 @@
 
         if (this.poly && me.latlngsList.length === 0) {
           me.latlngsList.push(this.latlngs);
-          me.allLatlng.push(this.latlngs);
-          // me.allLatlng.push([e.latlng.lat, e.latlng.lng]);
 
           if (me.poly.getBounds().contains(e.latlng)) {
             // console.log('Hello ssi if click');
@@ -172,14 +170,6 @@
               }
             }
 
-            // Polygon pushing the data after complting the shape so removing data if shape is complete with first and last data same
-            // for (let index = 0; index < polygon.length; index++) {
-            //   for (let j = 0; j < polygon[index].length; j++) {
-            //     if (j !== 0 && polygon[index][0] === polygon[index][j]) {
-            //       // polygon[index].splice(j + 1, 1)
-            //     }
-            //   }
-            // }
             localStorage.setItem("polygon", JSON.stringify(polygon))
           }
           me.preClick(e);
@@ -210,7 +200,7 @@
       this.layer.on('click', this.clickEventFn, this);
     },
 
-    resetRuler: function (resetLayer, allPoints = []) {
+    resetRuler: function (resetLayer) {
 
       var map = this._map;
 
@@ -247,8 +237,7 @@
       this.totalIcon = null;
       this.total = null;
       this.lastCircle = null;
-      this.tempPolygon = []
-      this.allLatlng = [...allPoints]
+      this.tempPolygon = [];
       /* Leaflet return distances in meters */
       this.UNIT_CONV = 1000;
       this.SUB_UNIT_CONV = 1000;
@@ -541,10 +530,6 @@
 
       if (me.poly) {
         me.latlngsList.push(me.latlngs);
-        //ssi
-        // me.allLatlng.push([e.latlng.lat, e.latlng.lng]);
-        me.allLatlng.push(me.latlngs);// [{0,1},{0,1}]
-        //ssi
 
         if (me.latlngsList.length > 2) {
           let uniqData = _.uniqBy(me.latlngsList, function (e) {
@@ -661,10 +646,6 @@
       var azimut = '',
         me = this;
 
-      me.allLatlng.push(me.latlngs); //[{0,1},{0,1}]
-      // me.allLatlng.push([e.latlng.lat, e.latlng.lng])
-
-
       // ------------------- latlng for draw ------------
       var finalObject = JSON.parse(localStorage.getItem("finalObject")) || { shape: [], totalArea: 0 }
 
@@ -689,9 +670,7 @@
 
       let pitch = finalObject.pitch ? finalObject.pitch : "0/12"
 
-      // ----------To push Corordinate with conditions that the coordinates falls inside or outside--------
-
-
+      // To push Corordinate with conditions that the coordinates falls inside or outside--------
 
       let gmapPolygons = shapes.length > 0 && shapes.map(shapePolygon => {
         var polyCord = shapePolygon.path.map(point => {
@@ -716,7 +695,7 @@
         })
         finalObject.shape = [...shapes]
       } else {
-        var isOnEdge = false, isIntersect = false, lineTobePush, shapeIndex, matchedShape, minDistance;
+        var isOnEdge = false, isIntersect = false, shapeIndex;
         tmpo.map(tmpoLine => {
           finalObject.shape.map((shapePoly, shapePolyI) => {
             shapePoly.path.map(pathLine => {
@@ -724,16 +703,7 @@
               var line2 = turf.lineString([[pathLine[0].lat, pathLine[0].lng], [pathLine[1].lat, pathLine[1].lng]]);
               var intersect = turf.lineIntersect(line1, line2);
 
-              // var dist = L.latLng([tmpoLine[0].lat, tmpoLine[0].lng]).distanceTo([
-              //   pathLine[0].lat,
-              //   pathLine[0].lng,
-              // ]);
-
               if (intersect.features.length > 0) {
-                // if (dist <= 1.5) {
-                //   minDistance = dist
-                // }
-
                 isIntersect = true;
                 var intersectionCoord = intersect.features[0].geometry.coordinates;
 
@@ -759,7 +729,6 @@
 
 
         tmpo.map(line => {
-
           let lineStart = new window.google.maps.LatLng(
             line[0].lat,
             line[0].lng
@@ -792,7 +761,7 @@
                 }
               })
 
-              if (exit === false) {
+              if (!exit) {
                 finalObject.shape.push({
                   path: tmpo, area: 0, areaWithPitch: 0, unit: "sqft",
                   pitch: pitch,
@@ -801,39 +770,9 @@
                 exit = true
               }
             }
-            // if (minDistance < 1.5) {
-            //   matchedShape = finalObject.shape[polygonI].path
-            // }
           })
         })
-
-
-        // ssi test to make polygon with first and last same point(when user will not complete the shape at a time)
-
-        // if (isIntersect && minDistance < 1.5) {
-
-        //   var polygonCoords = matchedShape.length >= 3 && matchedShape.map(pth => {
-        //     return [pth[0].lat, pth[0].lng]
-        //   })
-
-        //   var lineFeature = {
-        //     "type": "Feature",
-        //     "properties": {},
-        //     "geometry": {
-        //       "type": "LineString",
-        //       "coordinates": polygonCoords
-        //     }
-        //   };
-
-        //   var polyFeature = turf.lineToPolygon(lineFeature);
-
-        //   polygon.push(polyFeature.geometry.coordinates[0])
-
-        //   localStorage.setItem("polygon", JSON.stringify(polygon))
-        // }
-        // ssi test
       }
-
 
       // Set out the finalObject
       finalObject.shape.length > 0 && finalObject.shape.map(poly => {
@@ -975,14 +914,6 @@
           '</div>'
         ].join('');
 
-      // html = [
-      //     '<div class="total-popup-content" style="background-color:' + this.options.color + '; color: ' + this.options.contrastingColor + '">' + label + azimut,
-      //     '  <svg class="close" viewbox="0 0 45 35">',
-      //     '   <path  style="stroke: ' + this.options.contrastingColor + '" class="close" d="M 10,10 L 30,30 M 30,10 L 10,30" />',
-      //     '  </svg>',
-      //     '</div>'
-      // ].join('');
-
 
       this.totalIcon = L.divIcon({ className: 'total-popup', html: html });
       this.total.setIcon(this.totalIcon);
@@ -1034,7 +965,7 @@
       workspace.on('click', fireSelected);
       workspace.fireEvent('selected', data);
       // this.resetRuler(false);
-      this.resetRuler(false, me.allLatlng);
+      this.resetRuler(false);
     },
     purgeLayers: function (layers) {
       for (var i in layers) {

@@ -1,56 +1,49 @@
 <!-- <!DOCTYPE html> -->
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <link rel="icon" href="<%= BASE_URL %>favicon.ico" />
-    <link rel="stylesheet" href="./leaflet.css" />
-    <link
-      rel="stylesheet"
-      href="leaflet/L.Control.Zoomslider.css"
-      type="text/css"
-    />
-    <link rel="stylesheet" href="./Leaflet.LinearMeasurement.css" />
-    <link rel="stylesheet" href="./leaflet-measure-path.css" />
-    <link rel="stylesheet" href="./Leaflet.draw.css" />
 
-    <link src="https://polyfill.io/v3/polyfill.min.js?features=default"></link>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <link rel="icon" href="<%= BASE_URL %>favicon.ico" />
+  <link rel="stylesheet" href="./leaflet.css" />
+  <link rel="stylesheet" href="leaflet/L.Control.Zoomslider.css" type="text/css" />
+  <link rel="stylesheet" href="./Leaflet.LinearMeasurement.css" />
+  <link rel="stylesheet" href="./leaflet-measure-path.css" />
+  <link rel="stylesheet" href="./Leaflet.draw.css" />
 
-    <script src="https://maps.googleapis.com/maps/api/js?key=<%= VUE_APP_MAP_ID %>&libraries=places,geometry"></script>
+  <link src="https://polyfill.io/v3/polyfill.min.js?features=default">
+  </link>
 
-    <script type="text/javascript" src="./leaflet.js" ></script>
-    <script type="text/javascript" src="./Leaflet.LinearMeasurement.js" ></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=<%= VUE_APP_MAP_ID %>&libraries=places,geometry"></script>
 
-    <script type="text/javascript" src="./leaflet.textpath.js"></script>
+  <script type="text/javascript" src="./leaflet.js"></script>
+  <script type="text/javascript" src="./Leaflet.LinearMeasurement.js"></script>
 
-    <script type="text/javascript" src="./leaflet-measure-path.js"></script>
+  <script type="text/javascript" src="./leaflet.textpath.js"></script>
 
-    <script type="text/javascript" src="./Leaflet.draw.js"></script>
+  <script type="text/javascript" src="./leaflet-measure-path.js"></script>
 
-    <script src="https://unpkg.com/dom-to-image@2.6.0/dist/dom-to-image.min.js"></script>
+  <script type="text/javascript" src="./Leaflet.draw.js"></script>
 
-    <!-- test -->
-     <script src='https://unpkg.com/@turf/turf/turf.min.js'></script>
-    <!-- test -->
+  <script src="https://unpkg.com/dom-to-image@2.6.0/dist/dom-to-image.min.js"></script>
 
-    <!-- font-family -->
-    <link rel="preconnect" href="https://fonts.gstatic.com" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
-      rel="stylesheet"
-    />
-    <title>Roof measuring</title>
-  </head>
+  <script type="text/javascript" src="./turf.min.js"></script>
 
-  <body>
-    <noscript>
-      <strong
-        >We're sorry but frog-admin doesn't work properly without JavaScript
-        enabled. Please enable it to continue.</strong
-      >
-    </noscript>
-    <div id="app"></div>
-    <!-- built files will be auto injected -->
-  </body>
+
+  <!-- font-family -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+  <title>Roof measuring</title>
+</head>
+
+<body>
+  <noscript>
+    <strong>We're sorry but frog-admin doesn't work properly without JavaScript
+      enabled. Please enable it to continue.</strong>
+  </noscript>
+  <div id="app"></div>
+  <!-- built files will be auto injected -->
+</body>
+
 </html>

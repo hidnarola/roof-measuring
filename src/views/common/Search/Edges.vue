@@ -141,7 +141,9 @@ export default {
               attributes: { fill: "yellow" },
             });
 
+            
             poly.on("click", function (e) {
+
               if (vueInstance.enableColor) {
                 //Color change code
                 vueInstance.colorPolyline(shp, path, e, _finalObject);
@@ -185,8 +187,9 @@ export default {
         this.polyData.map((polyD, ind) => {
           polyD.map((plData) => {
             if (
-              plData[0] == e.sourceTarget._latlngs[1].lat &&
-              plData[1] == e.sourceTarget._latlngs[1].lng
+              (plData[0] == e.sourceTarget._latlngs[1].lat &&
+              plData[1] == e.sourceTarget._latlngs[1].lng) || plData[0] == e.sourceTarget._latlngs[0].lat &&
+              plData[1] == e.sourceTarget._latlngs[0].lng
             ) {
               this.polyData.splice(ind, 1);
               if (
@@ -223,6 +226,8 @@ export default {
         }
         e.sourceTarget.remove(this.map);
       }
+      
+      
       localStorage.setItem("polygon", JSON.stringify(this.polyData));
       _finalObject.totalFacets = this.polyData.length;
       localStorage.setItem("finalObject", JSON.stringify(_finalObject));
