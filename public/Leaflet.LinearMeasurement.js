@@ -704,17 +704,17 @@
 
               if (intersect.features.length > 0) {
                 isIntersect = true;
-                var intersectionCoord = intersect.features[0].geometry.coordinates;
+                var intersectionCord = intersect.features[0].geometry.coordinates;
 
-                var myPosition = new google.maps.LatLng(intersectionCoord[0], intersectionCoord[1]);
-                var cascadiaFault = new google.maps.Polyline({
+                var intersectPoint = new google.maps.LatLng(intersectionCord[0], intersectionCord[1]);
+                var eachLine = new google.maps.Polyline({
                   path: [
                     new google.maps.LatLng(shapeLine[0].lat, shapeLine[0].lng),
                     new google.maps.LatLng(shapeLine[1].lat, shapeLine[1].lng),
                   ]
                 });
 
-                if (window.google.maps.geometry.poly.isLocationOnEdge(myPosition, cascadiaFault, 10e-1)) {
+                if (window.google.maps.geometry.poly.isLocationOnEdge(intersectPoint, eachLine, 10e-1)) {
                   isOnEdge = true;
                   shapeIndex = shapePolyI
                 } else {
