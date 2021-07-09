@@ -101,9 +101,9 @@
           me.latlngsList.push(this.latlngs);
 
           if (me.poly.getBounds().contains(e.latlng)) {
-            // console.log('Hello ssi if click');
+            // console.log('Hello if click');
           } else {
-            // console.log('Hello ssi Else click');
+            // console.log('Hello Else click');
           }
         }
 
@@ -145,9 +145,9 @@
                     }
                   })
 
-                  var filtered = me.tempPolygon.slice(start, end)
+                  var filteredPolygon = me.tempPolygon.slice(start, end)
 
-                  polygon.push(filtered);
+                  filteredPolygon.length >= 3 && polygon.push(filteredPolygon);
 
                   // To get polygon with unique data
                   function Unique(array) {
@@ -659,11 +659,11 @@
       // To make same first and end point create tempArray
       var tempArray = []
 
-      var tmpo = JSON.parse(JSON.stringify(me.latlngsList))
+      var currentDrawnLatlngs = JSON.parse(JSON.stringify(me.latlngsList))
 
-      if (tmpo.length > 1) {
-        tempArray.push((tmpo)[tmpo.length - 1][1], JSON.parse(JSON.stringify(e.latlng)))
-        tmpo.push(tempArray)
+      if (currentDrawnLatlngs.length > 1) {
+        tempArray.push((currentDrawnLatlngs)[currentDrawnLatlngs.length - 1][1], JSON.parse(JSON.stringify(e.latlng)))
+        currentDrawnLatlngs.push(tempArray)
       }
 
 
@@ -681,7 +681,7 @@
       var exit = false, isTrue = true;
       if (finalObject.shape === undefined || finalObject.shape.length == 0) {
         shapes.push({
-          path: tmpo, area: 0, areaWithPitch: 0, unit: "sqft",
+          path: currentDrawnLatlngs, area: 0, areaWithPitch: 0, unit: "sqft",
           pitch: pitch,
           squares: 0,
           waste: [{ per: 0, area: 0, square: 0 },
@@ -695,23 +695,22 @@
         finalObject.shape = [...shapes]
       } else {
         var isOnEdge = false, isIntersect = false, shapeIndex;
-        tmpo.map(tmpoLine => {
+        currentDrawnLatlngs.map(currentLine => {
           finalObject.shape.map((shapePoly, shapePolyI) => {
-            shapePoly.path.map(pathLine => {
-              var line1 = turf.lineString([[tmpoLine[0].lat, tmpoLine[0].lng], [tmpoLine[1].lat, tmpoLine[1].lng]]);
-              var line2 = turf.lineString([[pathLine[0].lat, pathLine[0].lng], [pathLine[1].lat, pathLine[1].lng]]);
+            shapePoly.path.map(shapeLine => {
+              var line1 = turf.lineString([[currentLine[0].lat, currentLine[0].lng], [currentLine[1].lat, currentLine[1].lng]]);
+              var line2 = turf.lineString([[shapeLine[0].lat, shapeLine[0].lng], [shapeLine[1].lat, shapeLine[1].lng]]);
               var intersect = turf.lineIntersect(line1, line2);
 
               if (intersect.features.length > 0) {
                 isIntersect = true;
                 var intersectionCoord = intersect.features[0].geometry.coordinates;
 
-
                 var myPosition = new google.maps.LatLng(intersectionCoord[0], intersectionCoord[1]);
                 var cascadiaFault = new google.maps.Polyline({
                   path: [
-                    new google.maps.LatLng(pathLine[0].lat, pathLine[0].lng),
-                    new google.maps.LatLng(pathLine[1].lat, pathLine[1].lng),
+                    new google.maps.LatLng(shapeLine[0].lat, shapeLine[0].lng),
+                    new google.maps.LatLng(shapeLine[1].lat, shapeLine[1].lng),
                   ]
                 });
 
@@ -727,7 +726,7 @@
         })
 
 
-        tmpo.map(line => {
+        currentDrawnLatlngs.map(line => {
           let lineStart = new window.google.maps.LatLng(
             line[0].lat,
             line[0].lng
@@ -746,7 +745,7 @@
                 finalObject.shape[polygonI].path.push(line)
               }
             } else {
-              tmpo.map(line => {
+              currentDrawnLatlngs.map(line => {
                 let pointStart = new window.google.maps.LatLng(
                   line[0].lat,
                   line[0].lng
@@ -762,7 +761,7 @@
 
               if (!exit) {
                 finalObject.shape.push({
-                  path: tmpo, area: 0, areaWithPitch: 0, unit: "sqft",
+                  path: currentDrawnLatlngs, area: 0, areaWithPitch: 0, unit: "sqft",
                   pitch: pitch,
                   squares: 0, waste: [{ per: 0, area: 0, square: 0 }, { per: 10, area: 0, square: 0 }, { per: 12, area: 0, square: 0 }, { per: 15, area: 0, square: 0 }, { per: 17, area: 0, square: 0 }, { per: 20, area: 0, square: 0 }, { per: 22, area: 0, square: 0 }]
                 })
