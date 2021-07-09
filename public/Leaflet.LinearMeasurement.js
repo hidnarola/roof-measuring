@@ -666,7 +666,6 @@
         tmpo.push(tempArray)
       }
 
-      var polygon = JSON.parse(localStorage.getItem("polygon"))
 
       let pitch = finalObject.pitch ? finalObject.pitch : "0/12"
 
@@ -784,7 +783,6 @@
 
           var feet = (distance.toFixed(4) * 3.2808).toFixed(2);
           pl.map(p => {
-
             if (!p.hasOwnProperty("color") && !p.hasOwnProperty("length") && !p.hasOwnProperty("label")) {
               {
                 p.color = "#1e0fff", p.label = "Unspecified", p.length = `${feet} ft`
@@ -801,12 +799,7 @@
           let unit = path[1].length.split(" ").pop();
           let length = parseFloat(path[1].length.split(" ")[0]);
 
-          var distance = L.latLng([path[0].lat, path[0].lng]).distanceTo([
-            path[1].lat,
-            path[1].lng,
-          ]);
 
-          var feet = (distance.toFixed(4) * 3.2808).toFixed(2);
           if (
             types &&
             types[path[1].label] != null &&
@@ -873,7 +866,7 @@
         })
         // Add measurement object in finalObject to manage total lenght with color details
         shp.type &&
-          Object.keys(shp.type).map((key, index) => {
+          Object.keys(shp.type).map((key) => {
             if (measurement && measurement[key] != null) {
               measurement[key].length += shp.type[key].length;
             } else {

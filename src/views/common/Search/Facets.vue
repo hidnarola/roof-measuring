@@ -533,8 +533,6 @@ export default {
       var ratio = widthRatio > heightRatio ? heightRatio : widthRatio;
       var canvasWidth = context.canvas.width * ratio;
       var canvasHeight = context.canvas.height * ratio;
-      // const marginX = (pageWidth - canvasWidth) / 2;
-      // const marginY = (pageHeight - canvasHeight) / 2;
       // -------------
       //First page- adding new content with header(); footer()
       header();
@@ -1037,21 +1035,7 @@ export default {
         polygonIndex < this.polyData.length;
         polygonIndex++
       ) {
-        if (isSingleShape) {
-          if (polygonIndex === finalPolygonIndex) {
-            // this.contextDraw(
-            //   polygonIndex,
-            //   ctx,
-            //   width,
-            //   height,
-            //   canvasElement,
-            //   doc,
-            //   20,
-            //   40,
-            //   isSingleShape
-            // );
-          }
-        } else {
+        if (!isSingleShape) {
           this.contextDraw(
             polygonIndex,
             ctx,

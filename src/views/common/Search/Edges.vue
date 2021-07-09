@@ -187,9 +187,7 @@ export default {
         this.polyData.map((polyD, ind) => {
           polyD.map((plData) => {
             if (
-              (plData[0] == e.sourceTarget._latlngs[1].lat &&
-              plData[1] == e.sourceTarget._latlngs[1].lng) || plData[0] == e.sourceTarget._latlngs[0].lat &&
-              plData[1] == e.sourceTarget._latlngs[0].lng
+              plData[0] == e.sourceTarget._latlngs[1].lat && plData[1] == e.sourceTarget._latlngs[1].lng
             ) {
               this.polyData.splice(ind, 1);
               if (
